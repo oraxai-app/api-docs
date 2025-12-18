@@ -49,17 +49,17 @@ paths:
             examples:
               sample:
                 value:
-                  company_id: "T1004"
+                  company_id: "T1006"
                   order_number: "1234567890"
                   order_ref_number: "ABC-REF-2025"
                   customer_id: "900001"
                   order_date: "2025-12-31"
-                  warehouse_id: "T1004"
+                  warehouse_id: "T1006"
                   items:
-                    - sku: "T1004SKU1"
+                    - sku: "T1006SKU1"
                       lot: "LOT-001"
                       qty: 10
-                    - sku: "T1004SKU2"
+                    - sku: "T1006SKU2"
                       lot: "LOT-002"
                       qty: 10
       responses:
@@ -110,6 +110,7 @@ components:
   schemas:
     ShipmentOrderRequest:
       type: object
+      description: Shipment order create request payload.
       additionalProperties: false
       required:
         - company_id
@@ -121,9 +122,9 @@ components:
       properties:
         company_id:
           type: string
-          description: "Zorunlu. Her zaman T1004 olmalı."
-          enum: ["T1004"]
-          example: "T1004"
+          description: "Zorunlu. Her zaman T1006 olmalı."
+          enum: ["T1006"]
+          example: "T1006"
 
         order_number:
           type: string
@@ -151,9 +152,9 @@ components:
 
         warehouse_id:
           type: string
-          description: "Zorunlu. Her zaman T1004 olmalı."
-          enum: ["T1004"]
-          example: "T1004"
+          description: "Zorunlu. Her zaman T1006 olmalı."
+          enum: ["T1006"]
+          example: "T1006"
 
         items:
           type: array
@@ -164,6 +165,7 @@ components:
 
     ShipmentOrderItem:
       type: object
+      description: Shipment order item line.
       additionalProperties: false
       required: [sku, lot, qty]
       properties:
@@ -171,12 +173,14 @@ components:
           type: string
           description: "Sistemde tanımlı geçerli SKU olmalı."
           minLength: 1
-          example: "T1004SKU1"
+          example: "T1006SKU1"
+
         lot:
           type: string
           description: "Sistemde tanımlı geçerli LOT olmalı."
           minLength: 1
           example: "LOT-001"
+
         qty:
           type: integer
           format: int32
@@ -186,6 +190,7 @@ components:
 
     GenericSuccessResponse:
       type: object
+      description: Example success response (adjust to your real API response).
       additionalProperties: true
       properties:
         success:
@@ -200,6 +205,7 @@ components:
 
     GenericErrorResponse:
       type: object
+      description: Example error response (adjust to your real API response).
       additionalProperties: true
       properties:
         success:
