@@ -6,12 +6,19 @@ info:
   version: "1.0.0"
 
 servers:
-  - url: https://api.oraxai.com
+  - url: https://wmsapi.oraxai.com
     description: Production
+
+tags:
+  - name: System
+    description: Sistem servisleri
+  - name: Shipment
+    description: Sevkiyat servisleri
 
 paths:
   /health:
     get:
+      tags: [System]
       summary: Servis sağlık kontrolü
       responses:
         "200":
@@ -20,7 +27,195 @@ paths:
             application/json:
               schema:
                 type: object
+                additionalProperties: false
                 properties:
                   status:
                     type: string
                     example: ok
+
+  /shipment-order:
+    post:
+      tags: [Shipment]
+      summary: Shipment order oluştur
+      description: Sevkiyat emrini ve kalemlerini oluşturur.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShipmentOrderRequest"
+            examples:
+              sample:
+                value:
+                  company_id: "T1004"
+                  order_number: "1234567890"
+                  order_ref_number: "ABC-REF-2025"
+                  customer_id: "900001"
+                  order_date: "2025-12-31"
+                  warehouse_id: "T1004"
+                  items:
+                    - sku: "T1004SKU1"
+                      lot: "LOT-001"
+                      qty: 10
+                    - sku: "T1004SKU2"
+                      lot: "LOT-002"
+                      qty: 10
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccessResponse"
+              examples:
+                ok:
+                  value:
+                    success: true
+                    message: "Shipment order created."
+                    order_number: "1234567890"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+        "401":
+          description: Unauthorized (X-API-Key missing/invalid)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+        "404":
+          description: Not found (customer/sku/lot systemde yok)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    ShipmentOrderRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - company_id
+        - order_number
+        - customer_id
+        - order_date
+        - warehouse_id
+        - items
+      properties:
+        company_id:
+          type: string
+          description: "Zorunlu. Her zaman T1004 olmalı."
+          enum: ["T1004"]
+          example: "T1004"
+
+        order_number:
+          type: string
+          description: "Zorunlu."
+          minLength: 1
+          example: "1234567890"
+
+        order_ref_number:
+          type: string
+          description: "Opsiyonel."
+          nullable: true
+          example: "ABC-REF-2025"
+
+        customer_id:
+          type: string
+          description: "Zorunlu. Sistemde tanımlı geçerli müşteri numarası olmalı."
+          minLength: 1
+          example: "900001"
+
+        order_date:
+          type: string
+          format: date
+          description: "Zorunlu. YYYY-MM-DD."
+          example: "2025-12-31"
+
+        warehouse_id:
+          type: string
+          description: "Zorunlu. Her zaman T1004 olmalı."
+          enum: ["T1004"]
+          example: "T1004"
+
+        items:
+          type: array
+          description: "Zorunlu. En az 1 kalem."
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/ShipmentOrderItem"
+
+    ShipmentOrderItem:
+      type: object
+      additionalProperties: false
+      required: [sku, lot, qty]
+      properties:
+        sku:
+          type: string
+          description: "Sistemde tanımlı geçerli SKU olmalı."
+          minLength: 1
+          example: "T1004SKU1"
+        lot:
+          type: string
+          description: "Sistemde tanımlı geçerli LOT olmalı."
+          minLength: 1
+          example: "LOT-001"
+        qty:
+          type: integer
+          format: int32
+          description: "Adet."
+          minimum: 1
+          example: 10
+
+    GenericSuccessResponse:
+      type: object
+      additionalProperties: true
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "OK"
+        order_number:
+          type: string
+          example: "1234567890"
+
+    GenericErrorResponse:
+      type: object
+      additionalProperties: true
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Error"
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "customer_id"
+              message:
+                type: string
+                example: "Customer not found."
