@@ -1,0 +1,26 @@
+openapi: 3.0.3
+
+info:
+  title: ORAXAI Integration API
+  description: ORAXAI middleware entegrasyon servisleri
+  version: "1.0.0"
+
+servers:
+  - url: https://api.oraxai.com
+    description: Production
+
+paths:
+  /health:
+    get:
+      summary: Servis sağlık kontrolü
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
