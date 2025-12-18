@@ -41,6 +41,7 @@ paths:
       summary: Material upsert (SKU_MASTER -> materials)
       description: |
         Malzeme kaydını sku_code üzerinden upsert eder (varsa günceller, yoksa oluşturur).
+        Ek alanlar için external_attributes kullanılabilir (json object).
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -49,6 +50,27 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/MaterialUpsertRequest"
+            examples:
+              sample:
+                value:
+                  material_name: "Paracetamol 500mg 20 Tablet"
+                  sku_code: "M1064329029"
+                  alternate_sku_code: "ALT-123"
+                  barcode_number: "08699514120117"
+                  gtin: "08699514120117"
+                  category: "FINISHED_GOOD"
+                  packaging_type: "BOX"
+                  base_unit: "PIECE"
+                  manufacturer: "ACME Pharma"
+                  shelf_life: 730
+                  shelf_life_unit: "DAY"
+                  units_per_pallet: 480
+                  units_per_box: 24
+                  unit_weight_bundle: 0.25
+                  external_attributes:
+                    customer_specific_code: "PH-7788"
+                    cold_chain: false
+                    note: "first import"
       responses:
         "200":
           description: OK
@@ -56,6 +78,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MaterialUpsertResponse"
+              examples:
+                created:
+                  value:
+                    success: true
+                    action: "CREATED"
+                    sku_code: "M1064329029"
+                    message: "Material created."
+                updated:
+                  value:
+                    success: true
+                    action: "UPDATED"
+                    sku_code: "M1064329029"
+                    message: "Material updated."
         "400":
           description: Validation error
           content:
@@ -88,6 +123,22 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ShipmentOrderRequest"
+            examples:
+              sample:
+                value:
+                  company_id: "T1006"
+                  order_number: "1234567890"
+                  order_ref_number: "ABC-REF-2025"
+                  customer_id: "900001"
+                  order_date: "2025-12-31"
+                  warehouse_id: "T1006"
+                  items:
+                    - sku: "T1006SKU1"
+                      lot: "LOT-001"
+                      qty: 10
+                    - sku: "T1006SKU2"
+                      lot: "LOT-002"
+                      qty: 10
       responses:
         "200":
           description: OK
@@ -95,6 +146,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenericSuccessResponse"
+              examples:
+                ok:
+                  value:
+                    success: true
+                    message: "Shipment order created."
+                    order_number: "1234567890"
         "400":
           description: Validation error
           content:
@@ -128,7 +185,6 @@ components:
       name: X-API-Key
 
   schemas:
-
     # -------------------------
     # MATERIALS
     # -------------------------
@@ -207,6 +263,14 @@ components:
           type: number
           nullable: true
 
+        external_attributes:
+          type: object
+          nullable: true
+          description: |
+            Opsiyonel. Karşı tarafın ekstra alan gönderebilmesi için serbest key-value alanı.
+            Örn: {"color":"blue","hazmat":true,"customCode":"X-123"}
+          additionalProperties: true
+
     MaterialUpsertResponse:
       type: object
       properties:
@@ -236,28 +300,43 @@ components:
       properties:
         company_id:
           type: string
+          description: "Zorunlu. Her zaman T1006 olmalı."
           enum: ["T1006"]
+          example: "T1006"
 
         order_number:
           type: string
+          description: "Zorunlu."
+          minLength: 1
+          example: "1234567890"
 
         order_ref_number:
           type: string
+          description: "Opsiyonel."
           nullable: true
+          example: "ABC-REF-2025"
 
         customer_id:
           type: string
+          description: "Zorunlu. Sistemde tanımlı geçerli müşteri numarası olmalı."
+          minLength: 1
+          example: "900001"
 
         order_date:
           type: string
           format: date
+          description: "Zorunlu. YYYY-MM-DD."
+          example: "2025-12-31"
 
         warehouse_id:
           type: string
+          description: "Zorunlu. Her zaman T1006 olmalı."
           enum: ["T1006"]
+          example: "T1006"
 
         items:
           type: array
+          description: "Zorunlu. En az 1 kalem."
           minItems: 1
           items:
             $ref: "#/components/schemas/ShipmentOrderItem"
@@ -269,34 +348,52 @@ components:
       properties:
         sku:
           type: string
+          description: "Sistemde tanımlı geçerli SKU olmalı."
+          minLength: 1
+          example: "T1006SKU1"
 
         lot:
           type: string
+          description: "Sistemde tanımlı geçerli LOT olmalı."
+          minLength: 1
+          example: "LOT-001"
 
         qty:
           type: integer
+          format: int32
+          description: "Adet."
           minimum: 1
+          example: 10
 
     # -------------------------
     # COMMON
     # -------------------------
     GenericSuccessResponse:
       type: object
+      description: Example success response (adjust to your real API response).
+      additionalProperties: true
       properties:
         success:
           type: boolean
+          example: true
         message:
           type: string
+          example: "OK"
         order_number:
           type: string
+          example: "1234567890"
 
     GenericErrorResponse:
       type: object
+      description: Example error response (adjust to your real API response).
+      additionalProperties: true
       properties:
         success:
           type: boolean
+          example: false
         message:
           type: string
+          example: "Error"
         errors:
           type: array
           items:
@@ -304,5 +401,7 @@ components:
             properties:
               field:
                 type: string
+                example: "customer_id"
               message:
                 type: string
+                example: "Customer not found."
