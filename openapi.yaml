@@ -41,9 +41,6 @@ paths:
       summary: Material upsert (SKU_MASTER -> materials)
       description: |
         Malzeme kaydını sku_code üzerinden upsert eder (varsa günceller, yoksa oluşturur).
-        Kart tipinde çalışır.
-        - sku_code unique
-        - gtin unique (is_deleted=false) varsayımıyla conflict dönebilir.
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -52,43 +49,13 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/MaterialUpsertRequest"
-            examples:
-              sample:
-                value:
-                  material_name: "Paracetamol 500mg 20 Tablet"
-                  sku_code: "M1064329029"
-                  alternate_sku_code: "ALT-123"
-                  barcode_number: "08699514120117"
-                  gtin: "08699514120117"
-                  category: "FINISHED_GOOD"
-                  packaging_type: "BOX"
-                  base_unit: "PIECE"
-                  manufacturer: "ACME Pharma"
-                  shelf_life: 730
-                  shelf_life_unit: 10
-                  units_per_pallet: 480
-                  units_per_box: 24
-                  unit_weight_bundle: 0.25
       responses:
         "200":
-          description: OK (Created or Updated)
+          description: OK
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/MaterialUpsertResponse"
-              examples:
-                created:
-                  value:
-                    success: true
-                    action: "CREATED"
-                    sku_code: "M1064329029"
-                    message: "Material created."
-                updated:
-                  value:
-                    success: true
-                    action: "UPDATED"
-                    sku_code: "M1064329029"
-                    message: "Material updated."
         "400":
           description: Validation error
           content:
@@ -96,19 +63,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/GenericErrorResponse"
         "401":
-          description: Unauthorized (X-API-Key missing/invalid)
+          description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenericErrorResponse"
         "409":
-          description: Conflict (ör. GTIN başka SKU’da kullanılıyor)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
-        "500":
-          description: Server error
+          description: Conflict
           content:
             application/json:
               schema:
@@ -127,22 +88,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ShipmentOrderRequest"
-            examples:
-              sample:
-                value:
-                  company_id: "T1006"
-                  order_number: "1234567890"
-                  order_ref_number: "ABC-REF-2025"
-                  customer_id: "900001"
-                  order_date: "2025-12-31"
-                  warehouse_id: "T1006"
-                  items:
-                    - sku: "T1006SKU1"
-                      lot: "LOT-001"
-                      qty: 10
-                    - sku: "T1006SKU2"
-                      lot: "LOT-002"
-                      qty: 10
       responses:
         "200":
           description: OK
@@ -150,12 +95,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenericSuccessResponse"
-              examples:
-                ok:
-                  value:
-                    success: true
-                    message: "Shipment order created."
-                    order_number: "1234567890"
         "400":
           description: Validation error
           content:
@@ -163,13 +102,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/GenericErrorResponse"
         "401":
-          description: Unauthorized (X-API-Key missing/invalid)
+          description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenericErrorResponse"
         "404":
-          description: Not found (customer/sku/lot sistemde yok)
+          description: Not found
           content:
             application/json:
               schema:
@@ -189,12 +128,12 @@ components:
       name: X-API-Key
 
   schemas:
+
     # -------------------------
-    # Materials
+    # MATERIALS
     # -------------------------
     MaterialUpsertRequest:
       type: object
-      description: Material create/update request payload.
       additionalProperties: false
       required:
         - material_name
@@ -209,113 +148,83 @@ components:
       properties:
         material_name:
           type: string
-          minLength: 1
-          description: "Zorunlu."
           example: "Paracetamol 500mg 20 Tablet"
+
         sku_code:
           type: string
-          minLength: 1
-          description: "Zorunlu. Unique."
           example: "M1064329029"
+
         alternate_sku_code:
           type: string
           nullable: true
-          description: "Opsiyonel."
-          example: "ALT-123"
+
         barcode_number:
           type: string
-          minLength: 1
-          description: "Zorunlu."
           example: "08699514120117"
+
         gtin:
           type: string
-          minLength: 1
-          description: "Zorunlu. is_deleted=false kayıtlar arasında unique olmalı."
           example: "08699514120117"
 
         category:
           type: string
-          description: "Zorunlu. Hammadde/Mamul/Sarf Malzeme/Diğer."
           enum: [RAW_MATERIAL, FINISHED_GOOD, CONSUMABLE, OTHER]
-          example: FINISHED_GOOD
+          x-enum-descriptions: ["Hammadde", "Mamul", "Sarf Malzeme", "Diğer"]
 
         packaging_type:
           type: string
-          description: "Zorunlu. Palet/Koli/Bağ/Diğer."
           enum: [PALLET, BOX, BUNDLE, OTHER]
-          example: BOX
+          x-enum-descriptions: ["Palet", "Koli", "Bağ", "Diğer"]
 
         base_unit:
           type: string
-          description: "Zorunlu. Adet/Kilo."
           enum: [PIECE, KILOGRAM]
-          example: PIECE
+          x-enum-descriptions: ["Adet", "Kilo"]
 
         manufacturer:
           type: string
-          minLength: 1
-          description: "Zorunlu."
           example: "ACME Pharma"
 
         shelf_life:
           type: integer
           nullable: true
-          minimum: 0
-          description: "Opsiyonel (ama önerilir)."
           example: 730
 
         shelf_life_unit:
-          type: integer
-          description: "Zorunlu. Sizdeki enum kodu. (Örn: 10 = Gün/Ay/Yıl mappinginiz)"
-          example: 10
+          type: string
+          enum: [DAY, MONTH, YEAR]
+          x-enum-descriptions: ["Gün", "Ay", "Yıl"]
 
         units_per_pallet:
           type: integer
           nullable: true
-          minimum: 0
-          description: "Opsiyonel."
-          example: 480
 
         units_per_box:
           type: integer
           nullable: true
-          minimum: 0
-          description: "Opsiyonel."
-          example: 24
 
         unit_weight_bundle:
           type: number
           nullable: true
-          minimum: 0
-          description: "Opsiyonel."
-          example: 0.25
 
     MaterialUpsertResponse:
       type: object
-      description: Material upsert response.
-      additionalProperties: false
-      required: [success, action, sku_code]
       properties:
         success:
           type: boolean
-          example: true
         action:
           type: string
           enum: [CREATED, UPDATED]
-          example: UPDATED
         sku_code:
           type: string
-          example: "M1064329029"
         message:
           type: string
-          example: "OK"
 
     # -------------------------
-    # Shipment (existing)
+    # SHIPMENT
     # -------------------------
     ShipmentOrderRequest:
       type: object
-      description: Shipment order create request payload.
       additionalProperties: false
       required:
         - company_id
@@ -327,98 +236,67 @@ components:
       properties:
         company_id:
           type: string
-          description: "Zorunlu. Her zaman T1006 olmalı."
           enum: ["T1006"]
-          example: "T1006"
 
         order_number:
           type: string
-          description: "Zorunlu."
-          minLength: 1
-          example: "1234567890"
 
         order_ref_number:
           type: string
-          description: "Opsiyonel."
           nullable: true
-          example: "ABC-REF-2025"
 
         customer_id:
           type: string
-          description: "Zorunlu. Sistemde tanımlı geçerli müşteri numarası olmalı."
-          minLength: 1
-          example: "900001"
 
         order_date:
           type: string
           format: date
-          description: "Zorunlu. YYYY-MM-DD."
-          example: "2025-12-31"
 
         warehouse_id:
           type: string
-          description: "Zorunlu. Her zaman T1006 olmalı."
           enum: ["T1006"]
-          example: "T1006"
 
         items:
           type: array
-          description: "Zorunlu. En az 1 kalem."
           minItems: 1
           items:
             $ref: "#/components/schemas/ShipmentOrderItem"
 
     ShipmentOrderItem:
       type: object
-      description: Shipment order item line.
       additionalProperties: false
       required: [sku, lot, qty]
       properties:
         sku:
           type: string
-          description: "Sistemde tanımlı geçerli SKU olmalı."
-          minLength: 1
-          example: "T1006SKU1"
 
         lot:
           type: string
-          description: "Sistemde tanımlı geçerli LOT olmalı."
-          minLength: 1
-          example: "LOT-001"
 
         qty:
           type: integer
-          format: int32
-          description: "Adet."
           minimum: 1
-          example: 10
 
+    # -------------------------
+    # COMMON
+    # -------------------------
     GenericSuccessResponse:
       type: object
-      description: Example success response (adjust to your real API response).
-      additionalProperties: true
       properties:
         success:
           type: boolean
-          example: true
         message:
           type: string
-          example: "OK"
         order_number:
           type: string
-          example: "1234567890"
 
     GenericErrorResponse:
       type: object
-      description: Example error response (adjust to your real API response).
-      additionalProperties: true
       properties:
         success:
           type: boolean
-          example: false
         message:
           type: string
-          example: "Error"
         errors:
           type: array
           items:
@@ -426,7 +304,5 @@ components:
             properties:
               field:
                 type: string
-                example: "customer_id"
               message:
                 type: string
-                example: "Customer not found."
