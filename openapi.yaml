@@ -14,6 +14,10 @@ tags:
     description: Sistem servisleri
   - name: Materials
     description: Malzeme (SKU_MASTER) servisleri
+  - name: Customers
+    description: Müşteri/Cari servisleri
+  - name: Inbound
+    description: Depo giriş (irsaliye/fatura bazlı) servisleri
   - name: Shipment
     description: Sevkiyat servisleri
 
@@ -105,6 +109,144 @@ paths:
                 $ref: "#/components/schemas/GenericErrorResponse"
         "409":
           description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+
+  /customers:
+    post:
+      tags: [Customers]
+      summary: Customer upsert
+      description: |
+        Customer kaydını customer_code üzerinden upsert eder (varsa günceller, yoksa oluşturur).
+        Ek alanlar için external_attributes kullanılabilir (json object).
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerUpsertRequest"
+            examples:
+              sample:
+                value:
+                  customer_code: "900001"
+                  customer_name: "ACME ECZA DEPOSU A.Ş."
+                  customer_short_name: "ACME"
+                  address: "İzmir OSB ... No:1 Bornova/İzmir"
+                  gln: "8699999000001"
+                  shipto_gln: "8699999000002"
+                  status: "ACTIVE"
+                  external_attributes:
+                    logo_customer_code: "L-12345"
+                    note: "imported from LOGO"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerUpsertResponse"
+              examples:
+                created:
+                  value:
+                    success: true
+                    action: "CREATED"
+                    customer_code: "900001"
+                    message: "Customer created."
+                updated:
+                  value:
+                    success: true
+                    action: "UPDATED"
+                    customer_code: "900001"
+                    message: "Customer updated."
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+
+  /inbound-orders:
+    post:
+      tags: [Inbound]
+      summary: Inbound order create (pre-advice)
+      description: |
+        İlaç firması depoya ürün göndermeden önce depo giriş bilgilerini iletir.
+        Bu kayıt fiş tipindedir: aynı invoice_number tekrar kabul edilmemelidir.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InboundOrderRequest"
+            examples:
+              sample:
+                value:
+                  warehouse_code: "T1006"
+                  invoice_number: "1111111"
+                  invoice_date: "2025-11-01"
+                  order_number: "1234567"
+                  items:
+                    - sku_code: "123456"
+                      quantity: 100
+                      lot: "LT01"
+                      production_date: "2025-11-01"
+                      expiry_date: "2027-12-31"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccessResponse"
+              examples:
+                ok:
+                  value:
+                    success: true
+                    message: "Inbound order created."
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+        "404":
+          description: Not found (warehouse/sku sistemde yok)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+        "409":
+          description: Conflict (duplicate invoice_number)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+        "500":
+          description: Server error
           content:
             application/json:
               schema:
@@ -285,6 +427,164 @@ components:
           type: string
 
     # -------------------------
+    # CUSTOMERS
+    # -------------------------
+    CustomerUpsertRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - customer_code
+        - customer_name
+        - customer_short_name
+        - status
+      properties:
+        customer_code:
+          type: string
+          minLength: 1
+          description: "Zorunlu. Unique."
+          example: "900001"
+
+        customer_name:
+          type: string
+          minLength: 1
+          description: "Zorunlu."
+          example: "ACME ECZA DEPOSU A.Ş."
+
+        customer_short_name:
+          type: string
+          minLength: 1
+          description: "Zorunlu."
+          example: "ACME"
+
+        address:
+          type: string
+          nullable: true
+          description: "Opsiyonel."
+          example: "İzmir OSB ... No:1 Bornova/İzmir"
+
+        gln:
+          type: string
+          nullable: true
+          description: "Opsiyonel."
+          example: "8699999000001"
+
+        shipto_gln:
+          type: string
+          nullable: true
+          description: "Opsiyonel."
+          example: "8699999000002"
+
+        status:
+          type: string
+          description: "Zorunlu."
+          enum: [ACTIVE, PASSIVE]
+          x-enum-descriptions: ["Aktif", "Pasif"]
+          example: "ACTIVE"
+
+        external_attributes:
+          type: object
+          nullable: true
+          description: "Opsiyonel serbest alan (json object)."
+          additionalProperties: true
+
+    CustomerUpsertResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        action:
+          type: string
+          enum: [CREATED, UPDATED]
+        customer_code:
+          type: string
+        message:
+          type: string
+
+    # -------------------------
+    # INBOUND (PRE-ADVICE)
+    # -------------------------
+    InboundOrderRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - warehouse_code
+        - invoice_number
+        - invoice_date
+        - order_number
+        - items
+      properties:
+        warehouse_code:
+          type: string
+          minLength: 1
+          description: "Zorunlu. Depo kodu."
+          example: "T1006"
+
+        invoice_number:
+          type: string
+          minLength: 1
+          description: "Zorunlu. Aynı invoice_number tekrar kabul edilmez."
+          example: "1111111"
+
+        invoice_date:
+          type: string
+          format: date
+          description: "Zorunlu. YYYY-MM-DD."
+          example: "2025-11-01"
+
+        order_number:
+          type: string
+          minLength: 1
+          description: "Zorunlu. Sipariş numarası."
+          example: "1234567"
+
+        items:
+          type: array
+          minItems: 1
+          description: "Zorunlu. En az 1 kalem."
+          items:
+            $ref: "#/components/schemas/InboundOrderItem"
+
+    InboundOrderItem:
+      type: object
+      additionalProperties: false
+      required:
+        - sku_code
+        - quantity
+        - lot
+        - production_date
+        - expiry_date
+      properties:
+        sku_code:
+          type: string
+          minLength: 1
+          description: "Zorunlu. Sistemde tanımlı SKU."
+          example: "123456"
+
+        quantity:
+          type: number
+          minimum: 0.000001
+          description: "Zorunlu."
+          example: 100
+
+        lot:
+          type: string
+          minLength: 1
+          description: "Zorunlu. LOT/Batch."
+          example: "LT01"
+
+        production_date:
+          type: string
+          format: date
+          description: "Zorunlu. Üretim tarihi."
+          example: "2025-11-01"
+
+        expiry_date:
+          type: string
+          format: date
+          description: "Zorunlu. Son kullanma tarihi."
+          example: "2027-12-31"
+
+    # -------------------------
     # SHIPMENT
     # -------------------------
     ShipmentOrderRequest:
@@ -401,7 +701,7 @@ components:
             properties:
               field:
                 type: string
-                example: "customer_id"
+                example: "field_name"
               message:
                 type: string
-                example: "Customer not found."
+                example: "Validation message"
