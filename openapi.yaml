@@ -58,10 +58,10 @@ paths:
                 value:
                   company_id: "T1006"
                   material_name: "Paracetamol 500mg 20 Tablet"
-                  sku_code: "M1064329029"
+                  sku_code: "T1006RT657"
                   alternate_sku_code: "ALT-123"
-                  barcode_number: "08699514120117"
-                  gtin: "08699514120117"
+                  barcode_number: "0869951413423"
+                  gtin: "0869951413423"
                   category: 1
                   packaging_type: 1
                   base_unit: 1
