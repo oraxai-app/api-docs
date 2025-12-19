@@ -12,12 +12,12 @@ servers:
 tags:
   - name: System
     description: Sistem servisleri
-  - name: Materials
+  - name: Material
     description: Malzeme (SKU_MASTER) servisleri
-  - name: Customers
+  - name: Customer
     description: Müşteri/Cari servisleri
   - name: Inbound
-    description: Depo giriş (irsaliye/fatura bazlı) servisleri
+    description: Depo giriş (pre-advice) servisleri
   - name: Shipment
     description: Sevkiyat servisleri
 
@@ -39,13 +39,12 @@ paths:
                     type: string
                     example: ok
 
-  /materials:
+  /material:
     post:
-      tags: [Materials]
-      summary: Material upsert (SKU_MASTER -> materials)
+      tags: [Material]
+      summary: Material upsert
       description: |
-        Malzeme kaydını sku_code üzerinden upsert eder (varsa günceller, yoksa oluşturur).
-        Ek alanlar için external_attributes kullanılabilir (json object).
+        sku_code üzerinden upsert eder (varsa günceller, yoksa oluşturur).
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -53,47 +52,45 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MaterialUpsertRequest"
+              $ref: "#/components/schemas/MaterialRequest"
             examples:
               sample:
                 value:
+                  company_id: "T1006"
                   material_name: "Paracetamol 500mg 20 Tablet"
                   sku_code: "M1064329029"
                   alternate_sku_code: "ALT-123"
                   barcode_number: "08699514120117"
                   gtin: "08699514120117"
-                  category: "FINISHED_GOOD"
-                  packaging_type: "BOX"
-                  base_unit: "PIECE"
+                  category: 1
+                  packaging_type: 1
+                  base_unit: 1
                   manufacturer: "ACME Pharma"
                   shelf_life: 730
-                  shelf_life_unit: "DAY"
-                  units_per_pallet: 480
-                  units_per_box: 24
-                  unit_weight_bundle: 0.25
+                  shelf_life_unit: 1
+                  units_per_pallet: 1000
+                  units_per_box: 50
+                  unit_weight_bundle: null
                   external_attributes:
                     customer_specific_code: "PH-7788"
-                    cold_chain: false
-                    note: "first import"
+                    note: "notes"
       responses:
         "200":
-          description: OK
+          description: OK (Created/Updated)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MaterialUpsertResponse"
+                $ref: "#/components/schemas/GenericUpsertResponse"
               examples:
                 created:
                   value:
                     success: true
                     action: "CREATED"
-                    sku_code: "M1064329029"
                     message: "Material created."
                 updated:
                   value:
                     success: true
                     action: "UPDATED"
-                    sku_code: "M1064329029"
                     message: "Material updated."
         "400":
           description: Validation error
@@ -114,13 +111,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/GenericErrorResponse"
 
-  /customers:
+  /customer:
     post:
-      tags: [Customers]
+      tags: [Customer]
       summary: Customer upsert
       description: |
-        Customer kaydını customer_code üzerinden upsert eder (varsa günceller, yoksa oluşturur).
-        Ek alanlar için external_attributes kullanılabilir (json object).
+        customer_code üzerinden upsert eder (varsa günceller, yoksa oluşturur).
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -128,39 +124,37 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CustomerUpsertRequest"
+              $ref: "#/components/schemas/CustomerRequest"
             examples:
               sample:
                 value:
+                  company_id: "T1006"
                   customer_code: "900001"
                   customer_name: "ACME ECZA DEPOSU A.Ş."
                   customer_short_name: "ACME"
                   address: "İzmir OSB ... No:1 Bornova/İzmir"
                   gln: "8699999000001"
                   shipto_gln: "8699999000002"
-                  status: "ACTIVE"
+                  status: 1
                   external_attributes:
-                    logo_customer_code: "L-12345"
                     note: "imported from LOGO"
       responses:
         "200":
-          description: OK
+          description: OK (Created/Updated)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CustomerUpsertResponse"
+                $ref: "#/components/schemas/GenericUpsertResponse"
               examples:
                 created:
                   value:
                     success: true
                     action: "CREATED"
-                    customer_code: "900001"
                     message: "Customer created."
                 updated:
                   value:
                     success: true
                     action: "UPDATED"
-                    customer_code: "900001"
                     message: "Customer updated."
         "400":
           description: Validation error
@@ -181,7 +175,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GenericErrorResponse"
 
-  /inbound-orders:
+  /inbound-order:
     post:
       tags: [Inbound]
       summary: Inbound order create (pre-advice)
@@ -199,14 +193,21 @@ paths:
             examples:
               sample:
                 value:
+                  company_id: "T1006"
                   warehouse_code: "T1006"
                   invoice_number: "1111111"
                   invoice_date: "2025-11-01"
                   order_number: "1234567"
+                  pts_transfer_id: "1234567"
                   items:
                     - sku_code: "123456"
                       quantity: 100
                       lot: "LT01"
+                      production_date: "2025-11-01"
+                      expiry_date: "2027-12-31"
+                    - sku_code: "123457"
+                      quantity: 100
+                      lot: "LT02"
                       production_date: "2025-11-01"
                       expiry_date: "2027-12-31"
       responses:
@@ -275,10 +276,10 @@ paths:
                   order_date: "2025-12-31"
                   warehouse_id: "T1006"
                   items:
-                    - sku: "T1006SKU1"
+                    - sku: "12345678"
                       lot: "LOT-001"
                       qty: 10
-                    - sku: "T1006SKU2"
+                    - sku: "12345679"
                       lot: "LOT-002"
                       qty: 10
       responses:
@@ -328,116 +329,159 @@ components:
 
   schemas:
     # -------------------------
-    # MATERIALS
+    # MATERIAL
     # -------------------------
-    MaterialUpsertRequest:
+    MaterialRequest:
       type: object
       additionalProperties: false
       required:
+        - company_id
         - material_name
         - sku_code
-        - barcode_number
         - gtin
-        - category
-        - packaging_type
-        - base_unit
         - manufacturer
-        - shelf_life_unit
       properties:
+        company_id:
+          type: string
+          description: "Zorunlu. Her zaman T1006 olmalı."
+          enum: ["T1006"]
+          example: "T1006"
+
         material_name:
           type: string
+          minLength: 1
+          description: "Zorunlu."
           example: "Paracetamol 500mg 20 Tablet"
 
         sku_code:
           type: string
+          minLength: 1
+          description: "Zorunlu. Unique."
           example: "M1064329029"
 
         alternate_sku_code:
           type: string
           nullable: true
+          description: "Opsiyonel."
+          example: "ALT-123"
 
         barcode_number:
           type: string
+          nullable: true
+          description: "Opsiyonel."
           example: "08699514120117"
 
         gtin:
           type: string
+          minLength: 1
+          description: "Zorunlu."
           example: "08699514120117"
 
+        # ✅ Dropdown (integer enum)
         category:
-          type: string
-          enum: [RAW_MATERIAL, FINISHED_GOOD, CONSUMABLE, OTHER]
-          x-enum-descriptions: ["Hammadde", "Mamul", "Sarf Malzeme", "Diğer"]
+          type: integer
+          nullable: true
+          enum: [1, 2, 3, 4, 5, 6, 7]
+          x-enum-descriptions:
+            - "Mamül"
+            - "Hammadde"
+            - "Yardımcı Malzeme"
+            - "Ambalaj Malzemesi"
+            - "Sarf Malzemesi"
+            - "Geri Dönüşüm Malzemesi"
+            - "Diğer"
+          description: "Opsiyonel."
+          example: 1
 
+        # ✅ Dropdown (integer enum)
         packaging_type:
-          type: string
-          enum: [PALLET, BOX, BUNDLE, OTHER]
-          x-enum-descriptions: ["Palet", "Koli", "Bağ", "Diğer"]
+          type: integer
+          nullable: true
+          enum: [1, 2, 3, 4]
+          x-enum-descriptions: ["Koli", "Palet", "Bağ", "Diğer"]
+          description: "Opsiyonel."
+          example: 1
 
+        # ✅ Dropdown (integer enum)
         base_unit:
-          type: string
-          enum: [PIECE, KILOGRAM]
-          x-enum-descriptions: ["Adet", "Kilo"]
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
+          x-enum-descriptions: ["Adet", "Kilogram", "Litre"]
+          description: "Opsiyonel."
+          example: 1
 
         manufacturer:
           type: string
+          minLength: 1
+          description: "Zorunlu."
           example: "ACME Pharma"
 
         shelf_life:
           type: integer
           nullable: true
+          minimum: 0
+          description: "Opsiyonel."
           example: 730
 
+        # ✅ Dropdown (integer enum)
         shelf_life_unit:
-          type: string
-          enum: [DAY, MONTH, YEAR]
+          type: integer
+          nullable: true
+          enum: [1, 2, 3]
           x-enum-descriptions: ["Gün", "Ay", "Yıl"]
+          description: "Opsiyonel."
+          example: 1
 
         units_per_pallet:
           type: integer
           nullable: true
+          minimum: 0
+          description: "Opsiyonel."
+          example: 1000
 
         units_per_box:
           type: integer
           nullable: true
+          minimum: 0
+          description: "Opsiyonel."
+          example: 50
 
         unit_weight_bundle:
           type: number
           nullable: true
+          minimum: 0
+          description: "Opsiyonel."
+          example: null
 
         external_attributes:
           type: object
           nullable: true
           description: |
-            Opsiyonel. Karşı tarafın ekstra alan gönderebilmesi için serbest key-value alanı.
-            Örn: {"color":"blue","hazmat":true,"customCode":"X-123"}
+            Ürüne ait extra bilgiler bu kisma yazılacak (opsiyonel).
+            Örn: {"customer_specific_code":"PH-7788","note":"notes"}
           additionalProperties: true
 
-    MaterialUpsertResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        action:
-          type: string
-          enum: [CREATED, UPDATED]
-        sku_code:
-          type: string
-        message:
-          type: string
-
     # -------------------------
-    # CUSTOMERS
+    # CUSTOMER
     # -------------------------
-    CustomerUpsertRequest:
+    CustomerRequest:
       type: object
       additionalProperties: false
       required:
+        - company_id
         - customer_code
         - customer_name
         - customer_short_name
+        - address
         - status
       properties:
+        company_id:
+          type: string
+          description: "Zorunlu. Her zaman T1006 olmalı."
+          enum: ["T1006"]
+          example: "T1006"
+
         customer_code:
           type: string
           minLength: 1
@@ -458,8 +502,8 @@ components:
 
         address:
           type: string
-          nullable: true
-          description: "Opsiyonel."
+          minLength: 1
+          description: "Zorunlu."
           example: "İzmir OSB ... No:1 Bornova/İzmir"
 
         gln:
@@ -474,49 +518,46 @@ components:
           description: "Opsiyonel."
           example: "8699999000002"
 
+        # ✅ Dropdown (integer enum)
         status:
-          type: string
+          type: integer
+          enum: [1, 2]
+          x-enum-descriptions: ["Active", "Passive"]
           description: "Zorunlu."
-          enum: [ACTIVE, PASSIVE]
-          x-enum-descriptions: ["Aktif", "Pasif"]
-          example: "ACTIVE"
+          example: 1
 
         external_attributes:
           type: object
           nullable: true
-          description: "Opsiyonel serbest alan (json object)."
+          description: |
+            Customer'e ait extra bilgiler bu kisma yazılacak (opsiyonel).
+            Örn: {"note":"imported from LOGO"}
           additionalProperties: true
 
-    CustomerUpsertResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        action:
-          type: string
-          enum: [CREATED, UPDATED]
-        customer_code:
-          type: string
-        message:
-          type: string
-
     # -------------------------
-    # INBOUND (PRE-ADVICE)
+    # INBOUND
     # -------------------------
     InboundOrderRequest:
       type: object
       additionalProperties: false
       required:
+        - company_id
         - warehouse_code
         - invoice_number
         - invoice_date
         - order_number
         - items
       properties:
+        company_id:
+          type: string
+          description: "Zorunlu. Her zaman T1006 olmalı."
+          enum: ["T1006"]
+          example: "T1006"
+
         warehouse_code:
           type: string
-          minLength: 1
-          description: "Zorunlu. Depo kodu."
+          description: "Zorunlu. Her zaman T1006 olmalı."
+          enum: ["T1006"]
           example: "T1006"
 
         invoice_number:
@@ -528,13 +569,19 @@ components:
         invoice_date:
           type: string
           format: date
-          description: "Zorunlu. YYYY-MM-DD."
+          description: "Zorunlu. YYYY-MM-DD formatında."
           example: "2025-11-01"
 
         order_number:
           type: string
           minLength: 1
-          description: "Zorunlu. Sipariş numarası."
+          description: "Zorunlu."
+          example: "1234567"
+
+        pts_transfer_id:
+          type: string
+          nullable: true
+          description: "Opsiyonel. Varsa üretim bildirimi yapılmış PTS transfer id."
           example: "1234567"
 
         items:
@@ -557,31 +604,31 @@ components:
         sku_code:
           type: string
           minLength: 1
-          description: "Zorunlu. Sistemde tanımlı SKU."
+          description: "Zorunlu."
           example: "123456"
 
         quantity:
           type: number
-          minimum: 0.000001
           description: "Zorunlu."
+          minimum: 0.000001
           example: 100
 
         lot:
           type: string
           minLength: 1
-          description: "Zorunlu. LOT/Batch."
+          description: "Zorunlu."
           example: "LT01"
 
         production_date:
           type: string
           format: date
-          description: "Zorunlu. Üretim tarihi."
+          description: "Zorunlu. YYYY-MM-DD formatında."
           example: "2025-11-01"
 
         expiry_date:
           type: string
           format: date
-          description: "Zorunlu. Son kullanma tarihi."
+          description: "Zorunlu. YYYY-MM-DD formatında."
           example: "2027-12-31"
 
     # -------------------------
@@ -618,14 +665,14 @@ components:
 
         customer_id:
           type: string
-          description: "Zorunlu. Sistemde tanımlı geçerli müşteri numarası olmalı."
+          description: "Zorunlu."
           minLength: 1
           example: "900001"
 
         order_date:
           type: string
           format: date
-          description: "Zorunlu. YYYY-MM-DD."
+          description: "Zorunlu. YYYY-MM-DD formatında."
           example: "2025-12-31"
 
         warehouse_id:
@@ -648,13 +695,13 @@ components:
       properties:
         sku:
           type: string
-          description: "Sistemde tanımlı geçerli SKU olmalı."
+          description: "Zorunlu."
           minLength: 1
-          example: "T1006SKU1"
+          example: "12345678"
 
         lot:
           type: string
-          description: "Sistemde tanımlı geçerli LOT olmalı."
+          description: "Zorunlu."
           minLength: 1
           example: "LOT-001"
 
@@ -666,11 +713,10 @@ components:
           example: 10
 
     # -------------------------
-    # COMMON
+    # COMMON RESPONSES
     # -------------------------
     GenericSuccessResponse:
       type: object
-      description: Example success response (adjust to your real API response).
       additionalProperties: true
       properties:
         success:
@@ -681,11 +727,26 @@ components:
           example: "OK"
         order_number:
           type: string
+          nullable: true
           example: "1234567890"
+
+    GenericUpsertResponse:
+      type: object
+      additionalProperties: true
+      properties:
+        success:
+          type: boolean
+          example: true
+        action:
+          type: string
+          enum: [CREATED, UPDATED]
+          example: "UPDATED"
+        message:
+          type: string
+          example: "OK"
 
     GenericErrorResponse:
       type: object
-      description: Example error response (adjust to your real API response).
       additionalProperties: true
       properties:
         success:
