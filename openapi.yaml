@@ -7,7 +7,7 @@ info:
 
 servers:
   - url: https://wmsapi.oraxai.com
-    description: Production
+    description: Test
 
 tags:
   - name: System
