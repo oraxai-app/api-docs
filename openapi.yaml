@@ -117,6 +117,7 @@ paths:
       summary: Customer upsert
       description: |
         customer_code üzerinden upsert eder (varsa günceller, yoksa oluşturur).
+        shipto_addresses gönderilirse, shipto_code üzerinden alt kayıtlar upsert edilir.
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -134,8 +135,22 @@ paths:
                   customer_short_name: "ACME"
                   address: "İzmir OSB ... No:1 Bornova/İzmir"
                   gln: "8699999000001"
-                  shipto_gln: "8699999000002"
                   status: 1
+                  shipto_addresses:
+                    - shipto_code: "900001-001"
+                      shipto_name: "ACME Bornova Depo"
+                      address: "İzmir OSB ... No:1 Bornova/İzmir"
+                      shipto_gln: "8699999000002"
+                      status: 1
+                      external_attributes:
+                        note: "imported from LOGO"
+                    - shipto_code: "900001-002"
+                      shipto_name: "ACME Kemalpaşa Depo"
+                      address: "Kemalpaşa ..."
+                      shipto_gln: "8699999000003"
+                      status: 1
+                      external_attributes:
+                        note: "imported from LOGO"
                   external_attributes:
                     note: "imported from LOGO"
       responses:
@@ -377,7 +392,6 @@ components:
           description: "Zorunlu."
           example: "08699514120117"
 
-        # ✅ Dropdown (integer enum)
         category:
           type: integer
           nullable: true
@@ -393,7 +407,6 @@ components:
           description: "Opsiyonel."
           example: 1
 
-        # ✅ Dropdown (integer enum)
         packaging_type:
           type: integer
           nullable: true
@@ -402,7 +415,6 @@ components:
           description: "Opsiyonel."
           example: 1
 
-        # ✅ Dropdown (integer enum)
         base_unit:
           type: integer
           nullable: true
@@ -424,7 +436,6 @@ components:
           description: "Opsiyonel."
           example: 730
 
-        # ✅ Dropdown (integer enum)
         shelf_life_unit:
           type: integer
           nullable: true
@@ -512,13 +523,61 @@ components:
           description: "Opsiyonel."
           example: "8699999000001"
 
+        status:
+          type: integer
+          enum: [1, 2]
+          x-enum-descriptions: ["Active", "Passive"]
+          description: "Zorunlu."
+          example: 1
+
+        shipto_addresses:
+          type: array
+          nullable: true
+          description: "Opsiyonel. Ship-to adres listesi."
+          items:
+            $ref: "#/components/schemas/ShipToAddress"
+
+        external_attributes:
+          type: object
+          nullable: true
+          description: |
+            Customer'e ait extra bilgiler bu kisma yazılacak (opsiyonel).
+            Örn: {"note":"imported from LOGO"}
+          additionalProperties: true
+
+    ShipToAddress:
+      type: object
+      additionalProperties: false
+      required:
+        - shipto_code
+        - shipto_name
+        - address
+        - status
+      properties:
+        shipto_code:
+          type: string
+          minLength: 1
+          description: "Zorunlu. Ship-to kodu. Unique (customer bazında önerilir)."
+          example: "900001-001"
+
+        shipto_name:
+          type: string
+          minLength: 1
+          description: "Zorunlu. Ship-to adı."
+          example: "ACME Bornova Depo"
+
+        address:
+          type: string
+          minLength: 1
+          description: "Zorunlu. Ship-to adresi."
+          example: "İzmir OSB ... No:1 Bornova/İzmir"
+
         shipto_gln:
           type: string
           nullable: true
-          description: "Opsiyonel."
+          description: "Opsiyonel. Ship-to GLN."
           example: "8699999000002"
 
-        # ✅ Dropdown (integer enum)
         status:
           type: integer
           enum: [1, 2]
@@ -530,7 +589,7 @@ components:
           type: object
           nullable: true
           description: |
-            Customer'e ait extra bilgiler bu kisma yazılacak (opsiyonel).
+            Ship-to'ya ait extra bilgiler (opsiyonel).
             Örn: {"note":"imported from LOGO"}
           additionalProperties: true
 
