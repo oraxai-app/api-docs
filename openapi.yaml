@@ -272,7 +272,9 @@ paths:
     post:
       tags: [Shipment]
       summary: Shipment order oluştur
-      description: Sevkiyat emrini ve kalemlerini oluşturur.
+      description: |
+        Sevkiyat emrini ve kalemlerini oluşturur.
+        shipto_code, customer_id altında tanımlı aktif bir ship-to adresi olmalıdır.
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -288,6 +290,7 @@ paths:
                   order_number: "1234567890"
                   order_ref_number: "ABC-REF-2025"
                   customer_id: "900001"
+                  shipto_code: "900001-001"
                   order_date: "2025-12-31"
                   warehouse_id: "T1006"
                   items:
@@ -700,6 +703,7 @@ components:
         - company_id
         - order_number
         - customer_id
+        - shipto_code
         - order_date
         - warehouse_id
         - items
@@ -724,9 +728,15 @@ components:
 
         customer_id:
           type: string
-          description: "Zorunlu."
+          description: "Zorunlu. Customer code."
           minLength: 1
           example: "900001"
+
+        shipto_code:
+          type: string
+          description: "Zorunlu. Customer'a bağlı ship-to kodu."
+          minLength: 1
+          example: "900001-001"
 
         order_date:
           type: string
