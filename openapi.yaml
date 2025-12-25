@@ -33,7 +33,6 @@ paths:
             application/json:
               schema:
                 type: object
-                additionalProperties: false
                 properties:
                   status:
                     type: string
@@ -43,8 +42,7 @@ paths:
     post:
       tags: [Material]
       summary: Material upsert
-      description: |
-        sku_code üzerinden upsert eder (varsa günceller, yoksa oluşturur).
+      description: sku_code üzerinden upsert eder.
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -53,71 +51,19 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/MaterialRequest"
-            examples:
-              sample:
-                value:
-                  company_id: "T1006"
-                  material_name: "Paracetamol 500mg 20 Tablet"
-                  sku_code: "T1006RT657"
-                  alternate_sku_code: "ALT-123"
-                  barcode_number: "0869951413423"
-                  gtin: "0869951413423"
-                  category: 1
-                  packaging_type: 1
-                  base_unit: 1
-                  manufacturer: "ACME Pharma"
-                  shelf_life: 730
-                  shelf_life_unit: 1
-                  units_per_pallet: 1000
-                  units_per_box: 50
-                  unit_weight_bundle: null
-                  external_attributes:
-                    customer_specific_code: "PH-7788"
-                    note: "notes"
       responses:
         "200":
-          description: OK (Created/Updated)
+          description: OK
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenericUpsertResponse"
-              examples:
-                created:
-                  value:
-                    success: true
-                    action: "CREATED"
-                    message: "Material created."
-                updated:
-                  value:
-                    success: true
-                    action: "UPDATED"
-                    message: "Material updated."
-        "400":
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
-        "409":
-          description: Conflict
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
 
   /customer:
     post:
       tags: [Customer]
       summary: Customer upsert
-      description: |
-        customer_code üzerinden upsert eder (varsa günceller, yoksa oluşturur).
-        shipto_addresses gönderilirse, shipto_code üzerinden alt kayıtlar upsert edilir.
+      description: customer_code üzerinden upsert eder.
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -126,77 +72,21 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CustomerRequest"
-            examples:
-              sample:
-                value:
-                  company_id: "T1006"
-                  customer_code: "900001"
-                  customer_name: "ACME ECZA DEPOSU A.Ş."
-                  customer_short_name: "ACME"
-                  address: "İzmir OSB ... No:1 Bornova/İzmir"
-                  gln: "8699999000001"
-                  status: 1
-                  shipto_addresses:
-                    - shipto_code: "900001-001"
-                      shipto_name: "ACME Bornova Depo"
-                      address: "İzmir OSB ... No:1 Bornova/İzmir"
-                      shipto_gln: "8699999000002"
-                      status: 1
-                      external_attributes:
-                        note: "imported from LOGO"
-                    - shipto_code: "900001-002"
-                      shipto_name: "ACME Kemalpaşa Depo"
-                      address: "Kemalpaşa ..."
-                      shipto_gln: "8699999000003"
-                      status: 1
-                      external_attributes:
-                        note: "imported from LOGO"
-                  external_attributes:
-                    note: "imported from LOGO"
       responses:
         "200":
-          description: OK (Created/Updated)
+          description: OK
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenericUpsertResponse"
-              examples:
-                created:
-                  value:
-                    success: true
-                    action: "CREATED"
-                    message: "Customer created."
-                updated:
-                  value:
-                    success: true
-                    action: "UPDATED"
-                    message: "Customer updated."
-        "400":
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
-        "409":
-          description: Conflict
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
 
   /inbound-order:
     post:
       tags: [Inbound]
       summary: Inbound order create (pre-advice)
       description: |
-        İlaç firması depoya ürün göndermeden önce depo giriş bilgilerini iletir.
-        Bu kayıt fiş tipindedir: aynı invoice_number tekrar kabul edilmemelidir.
+        İlaç firması depoya ürün göndermeden önce depo giriş bilgisini iletir.
+        invoice_number tekildir.
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -205,26 +95,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/InboundOrderRequest"
-            examples:
-              sample:
-                value:
-                  company_id: "T1006"
-                  warehouse_code: "T1006"
-                  invoice_number: "1111111"
-                  invoice_date: "2025-11-01"
-                  order_number: "1234567"
-                  pts_transfer_id: "1234567"
-                  items:
-                    - sku_code: "123456"
-                      quantity: 100
-                      lot: "LT01"
-                      production_date: "2025-11-01"
-                      expiry_date: "2027-12-31"
-                    - sku_code: "123457"
-                      quantity: 100
-                      lot: "LT02"
-                      production_date: "2025-11-01"
-                      expiry_date: "2027-12-31"
       responses:
         "200":
           description: OK
@@ -232,49 +102,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenericSuccessResponse"
-              examples:
-                ok:
-                  value:
-                    success: true
-                    message: "Inbound order created."
-        "400":
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
-        "404":
-          description: Not found (warehouse/sku sistemde yok)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
         "409":
-          description: Conflict (duplicate invoice_number)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
-        "500":
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
+          description: Duplicate invoice_number
 
   /shipment-order:
     post:
       tags: [Shipment]
       summary: Shipment order oluştur
-      description: |
-        Sevkiyat emrini ve kalemlerini oluşturur.
-        shipto_code, customer_id altında tanımlı aktif bir ship-to adresi olmalıdır.
       security:
         - ApiKeyAuth: []
       requestBody:
@@ -283,23 +117,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ShipmentOrderRequest"
-            examples:
-              sample:
-                value:
-                  company_id: "T1006"
-                  order_number: "1234567890"
-                  order_ref_number: "ABC-REF-2025"
-                  customer_id: "900001"
-                  shipto_code: "900001-001"
-                  order_date: "2025-12-31"
-                  warehouse_id: "T1006"
-                  items:
-                    - sku: "12345678"
-                      lot: "LOT-001"
-                      qty: 10
-                    - sku: "12345679"
-                      lot: "LOT-002"
-                      qty: 10
       responses:
         "200":
           description: OK
@@ -307,36 +124,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GenericSuccessResponse"
-              examples:
-                ok:
-                  value:
-                    success: true
-                    message: "Shipment order created."
-                    order_number: "1234567890"
-        "400":
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
-        "404":
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
-        "500":
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
 
 components:
   securitySchemes:
@@ -346,142 +133,59 @@ components:
       name: X-API-Key
 
   schemas:
-    # -------------------------
-    # MATERIAL
-    # -------------------------
+
     MaterialRequest:
       type: object
-      additionalProperties: false
-      required:
-        - company_id
-        - material_name
-        - sku_code
-        - gtin
-        - manufacturer
+      required: [company_id, material_name, sku_code, gtin, manufacturer]
       properties:
         company_id:
           type: string
-          description: "Zorunlu. Her zaman T1006 olmalı."
           enum: ["T1006"]
-          example: "T1006"
-
         material_name:
           type: string
-          minLength: 1
-          description: "Zorunlu."
-          example: "Paracetamol 500mg 20 Tablet"
-
         sku_code:
           type: string
-          minLength: 1
-          description: "Zorunlu. Unique."
-          example: "M1064329029"
-
         alternate_sku_code:
           type: string
           nullable: true
-          description: "Opsiyonel."
-          example: "ALT-123"
-
         barcode_number:
           type: string
           nullable: true
-          description: "Opsiyonel."
-          example: "08699514120117"
-
         gtin:
           type: string
-          minLength: 1
-          description: "Zorunlu."
-          example: "08699514120117"
-
         category:
           type: integer
           nullable: true
-          enum: [1, 2, 3, 4, 5, 6, 7]
-          x-enum-descriptions:
-            - "Mamül"
-            - "Hammadde"
-            - "Yardımcı Malzeme"
-            - "Ambalaj Malzemesi"
-            - "Sarf Malzemesi"
-            - "Geri Dönüşüm Malzemesi"
-            - "Diğer"
-          description: "Opsiyonel."
-          example: 1
-
         packaging_type:
           type: integer
           nullable: true
-          enum: [1, 2, 3, 4]
-          x-enum-descriptions: ["Koli", "Palet", "Bağ", "Diğer"]
-          description: "Opsiyonel."
-          example: 1
-
         base_unit:
           type: integer
           nullable: true
-          enum: [1, 2, 3]
-          x-enum-descriptions: ["Adet", "Kilogram", "Litre"]
-          description: "Opsiyonel."
-          example: 1
-
         manufacturer:
           type: string
-          minLength: 1
-          description: "Zorunlu."
-          example: "ACME Pharma"
-
         shelf_life:
           type: integer
           nullable: true
-          minimum: 0
-          description: "Opsiyonel."
-          example: 730
-
         shelf_life_unit:
           type: integer
           nullable: true
-          enum: [1, 2, 3]
-          x-enum-descriptions: ["Gün", "Ay", "Yıl"]
-          description: "Opsiyonel."
-          example: 1
-
         units_per_pallet:
           type: integer
           nullable: true
-          minimum: 0
-          description: "Opsiyonel."
-          example: 1000
-
         units_per_box:
           type: integer
           nullable: true
-          minimum: 0
-          description: "Opsiyonel."
-          example: 50
-
         unit_weight_bundle:
           type: number
           nullable: true
-          minimum: 0
-          description: "Opsiyonel."
-          example: null
-
         external_attributes:
           type: object
           nullable: true
-          description: |
-            Ürüne ait extra bilgiler bu kisma yazılacak (opsiyonel).
-            Örn: {"customer_specific_code":"PH-7788","note":"notes"}
           additionalProperties: true
 
-    # -------------------------
-    # CUSTOMER
-    # -------------------------
     CustomerRequest:
       type: object
-      additionalProperties: false
       required:
         - company_id
         - customer_code
@@ -492,116 +196,52 @@ components:
       properties:
         company_id:
           type: string
-          description: "Zorunlu. Her zaman T1006 olmalı."
           enum: ["T1006"]
-          example: "T1006"
-
         customer_code:
           type: string
-          minLength: 1
-          description: "Zorunlu. Unique."
-          example: "900001"
-
         customer_name:
           type: string
-          minLength: 1
-          description: "Zorunlu."
-          example: "ACME ECZA DEPOSU A.Ş."
-
         customer_short_name:
           type: string
-          minLength: 1
-          description: "Zorunlu."
-          example: "ACME"
-
         address:
           type: string
-          minLength: 1
-          description: "Zorunlu."
-          example: "İzmir OSB ... No:1 Bornova/İzmir"
-
         gln:
           type: string
           nullable: true
-          description: "Opsiyonel."
-          example: "8699999000001"
-
         status:
           type: integer
-          enum: [1, 2]
-          x-enum-descriptions: ["Active", "Passive"]
-          description: "Zorunlu."
-          example: 1
-
         shipto_addresses:
           type: array
           nullable: true
-          description: "Opsiyonel. Ship-to adres listesi."
           items:
             $ref: "#/components/schemas/ShipToAddress"
-
         external_attributes:
           type: object
           nullable: true
-          description: |
-            Customer'e ait extra bilgiler bu kisma yazılacak (opsiyonel).
-            Örn: {"note":"imported from LOGO"}
           additionalProperties: true
 
     ShipToAddress:
       type: object
-      additionalProperties: false
-      required:
-        - shipto_code
-        - shipto_name
-        - address
-        - status
+      required: [shipto_code, shipto_name, address, status]
       properties:
         shipto_code:
           type: string
-          minLength: 1
-          description: "Zorunlu. Ship-to kodu. Unique (customer bazında önerilir)."
-          example: "900001-001"
-
         shipto_name:
           type: string
-          minLength: 1
-          description: "Zorunlu. Ship-to adı."
-          example: "ACME Bornova Depo"
-
         address:
           type: string
-          minLength: 1
-          description: "Zorunlu. Ship-to adresi."
-          example: "İzmir OSB ... No:1 Bornova/İzmir"
-
         shipto_gln:
           type: string
           nullable: true
-          description: "Opsiyonel. Ship-to GLN."
-          example: "8699999000002"
-
         status:
           type: integer
-          enum: [1, 2]
-          x-enum-descriptions: ["Active", "Passive"]
-          description: "Zorunlu."
-          example: 1
-
         external_attributes:
           type: object
           nullable: true
-          description: |
-            Ship-to'ya ait extra bilgiler (opsiyonel).
-            Örn: {"note":"imported from LOGO"}
           additionalProperties: true
 
-    # -------------------------
-    # INBOUND
-    # -------------------------
     InboundOrderRequest:
       type: object
-      additionalProperties: false
       required:
         - company_id
         - warehouse_code
@@ -612,50 +252,33 @@ components:
       properties:
         company_id:
           type: string
-          description: "Zorunlu. Her zaman T1006 olmalı."
           enum: ["T1006"]
-          example: "T1006"
-
         warehouse_code:
           type: string
-          description: "Zorunlu. Her zaman T1006 olmalı."
           enum: ["T1006"]
-          example: "T1006"
-
+        supplier_code:
+          type: string
+          nullable: true
+          description: "Opsiyonel. Tedarikçi (cari) kodu."
+          example: "SUP-001"
         invoice_number:
           type: string
-          minLength: 1
-          description: "Zorunlu. Aynı invoice_number tekrar kabul edilmez."
-          example: "1111111"
-
         invoice_date:
           type: string
           format: date
-          description: "Zorunlu. YYYY-MM-DD formatında."
-          example: "2025-11-01"
-
         order_number:
           type: string
-          minLength: 1
-          description: "Zorunlu."
-          example: "1234567"
-
         pts_transfer_id:
           type: string
           nullable: true
-          description: "Opsiyonel. Varsa üretim bildirimi yapılmış PTS transfer id."
-          example: "1234567"
-
         items:
           type: array
           minItems: 1
-          description: "Zorunlu. En az 1 kalem."
           items:
             $ref: "#/components/schemas/InboundOrderItem"
 
     InboundOrderItem:
       type: object
-      additionalProperties: false
       required:
         - sku_code
         - quantity
@@ -665,40 +288,19 @@ components:
       properties:
         sku_code:
           type: string
-          minLength: 1
-          description: "Zorunlu."
-          example: "123456"
-
         quantity:
           type: number
-          description: "Zorunlu."
-          minimum: 0.000001
-          example: 100
-
         lot:
           type: string
-          minLength: 1
-          description: "Zorunlu."
-          example: "LT01"
-
         production_date:
           type: string
           format: date
-          description: "Zorunlu. YYYY-MM-DD formatında."
-          example: "2025-11-01"
-
         expiry_date:
           type: string
           format: date
-          description: "Zorunlu. YYYY-MM-DD formatında."
-          example: "2027-12-31"
 
-    # -------------------------
-    # SHIPMENT
-    # -------------------------
     ShipmentOrderRequest:
       type: object
-      additionalProperties: false
       required:
         - company_id
         - order_number
@@ -710,120 +312,68 @@ components:
       properties:
         company_id:
           type: string
-          description: "Zorunlu. Her zaman T1006 olmalı."
           enum: ["T1006"]
-          example: "T1006"
-
         order_number:
           type: string
-          description: "Zorunlu."
-          minLength: 1
-          example: "1234567890"
-
         order_ref_number:
           type: string
-          description: "Opsiyonel."
           nullable: true
-          example: "ABC-REF-2025"
-
         customer_id:
           type: string
-          description: "Zorunlu. Customer code."
-          minLength: 1
-          example: "900001"
-
         shipto_code:
           type: string
-          description: "Zorunlu. Customer'a bağlı ship-to kodu."
-          minLength: 1
-          example: "900001-001"
-
         order_date:
           type: string
           format: date
-          description: "Zorunlu. YYYY-MM-DD formatında."
-          example: "2025-12-31"
-
         warehouse_id:
           type: string
-          description: "Zorunlu. Her zaman T1006 olmalı."
           enum: ["T1006"]
-          example: "T1006"
-
         items:
           type: array
-          description: "Zorunlu. En az 1 kalem."
           minItems: 1
           items:
             $ref: "#/components/schemas/ShipmentOrderItem"
 
     ShipmentOrderItem:
       type: object
-      additionalProperties: false
       required: [sku, lot, qty]
       properties:
         sku:
           type: string
-          description: "Zorunlu."
-          minLength: 1
-          example: "12345678"
-
         lot:
           type: string
-          description: "Zorunlu."
-          minLength: 1
-          example: "LOT-001"
-
         qty:
           type: integer
-          format: int32
-          description: "Adet."
-          minimum: 1
-          example: 10
 
-    # -------------------------
-    # COMMON RESPONSES
-    # -------------------------
     GenericSuccessResponse:
       type: object
-      additionalProperties: true
       properties:
         success:
           type: boolean
-          example: true
         message:
           type: string
-          example: "OK"
         order_number:
           type: string
           nullable: true
-          example: "1234567890"
 
     GenericUpsertResponse:
       type: object
-      additionalProperties: true
       properties:
         success:
           type: boolean
-          example: true
         action:
           type: string
           enum: [CREATED, UPDATED]
-          example: "UPDATED"
         message:
           type: string
-          example: "OK"
 
     GenericErrorResponse:
       type: object
-      additionalProperties: true
       properties:
         success:
           type: boolean
-          example: false
         message:
           type: string
-          example: "Error"
         errors:
           type: array
           items:
@@ -831,7 +381,5 @@ components:
             properties:
               field:
                 type: string
-                example: "field_name"
               message:
                 type: string
-                example: "Validation message"
