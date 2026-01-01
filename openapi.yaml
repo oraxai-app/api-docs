@@ -20,6 +20,8 @@ tags:
     description: Depo giriş (pre-advice) servisleri
   - name: Shipment
     description: Sevkiyat servisleri
+  - name: Query
+    description: Sorgu (query) servisleri
 
 paths:
   /health:
@@ -125,6 +127,158 @@ paths:
               schema:
                 $ref: "#/components/schemas/GenericSuccessResponse"
 
+  # ---------------------------
+  # QUERY SERVİSLERİ (YENİ)
+  # ---------------------------
+
+  /query/order/{order_number}:
+    get:
+      tags: [Query]
+      summary: Order query (tek kayıt)
+      description: order_number ile order event detayını getirir.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: order_number
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "54321"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderQueryResponse"
+              example:
+                company_id: "T1006"
+                data:
+                  customer_code: "120.04.020"
+                  items:
+                    - lot_number: "R2329047"
+                      quantity: 7800
+                      sku: "1405-009"
+                    - lot_number: "R2372048"
+                      quantity: 9200
+                      sku: "1405-009"
+                    - lot_number: "9450000049-Q"
+                      quantity: 3600
+                      sku: "1201-111026"
+                  order_type: "outbound"
+                  pts_transfer_id: "11223456"
+                  warehouse_code: "T1006"
+                entity_id: "54321"
+                entity_type: "ORDER"
+                event_key: "shipping"
+                status: "completed"
+                timestamp: "2024-01-15T10:30:00Z"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+
+  /query/list/order:
+    get:
+      tags: [Query]
+      summary: Order query list (liste)
+      description: Son güncellenen order event listesini getirir.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderQueryListItem"
+              example:
+                - event_key: "receiving"
+                  order_number: "12345"
+                  order_type: "inbound"
+                  status: "started"
+                  updated_at: "2024-01-15T10:30:00Z"
+                - event_key: "shipping"
+                  order_number: "54321"
+                  order_type: "outbound"
+                  status: "completed"
+                  updated_at: "2024-01-15T10:30:00Z"
+                - event_key: "picking"
+                  order_number: "88888"
+                  order_type: "outbound"
+                  status: "started"
+                  updated_at: "2024-01-15T10:30:00Z"
+
+  /query/stock/{warehouse_id}:
+    get:
+      tags: [Query]
+      summary: Stock query (depo bazlı)
+      description: warehouse_id ile depo stok durumunu getirir.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: warehouse_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "T1006"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockQueryResponse"
+              example:
+                stock_status:
+                  available:
+                    description: "Available for shipment"
+                    items:
+                      - lot_number: "9450000050"
+                        quantity: 960
+                        sku: "1201-111024"
+                    total_items: 1
+                    total_quantity: 960
+                  quarantine:
+                    description: "In quarantine area (Quality Hold / Blocked / Return / Disposal)"
+                    items:
+                      - lot_number: "R2329047"
+                        quantity: 7800
+                        sku: "1405-009"
+                    total_items: 1
+                    total_quantity: 7800
+                  staging:
+                    description: "In staging area, ready for shipment"
+                    items:
+                      - lot_number: "R2347031-R"
+                        quantity: 1200
+                        sku: "1405-008"
+                    total_items: 1
+                    total_quantity: 1200
+                  unconfirmed:
+                    description: "Received but not yet confirmed or approved"
+                    items:
+                      - lot_number: "UC-20241230-01"
+                        quantity: 5400
+                        sku: "1501-002"
+                    total_items: 1
+                    total_quantity: 5400
+                summary:
+                  grand_total_quantity: 15360
+                  total_available_quantity: 960
+                  total_quarantine_quantity: 7800
+                  total_staging_quantity: 1200
+                  total_unconfirmed_quantity: 5400
+                type: "STOCK"
+                updated_at: "2025-01-01T13:45:00Z"
+                warehouse_id: "T1006"
+
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -133,7 +287,6 @@ components:
       name: X-API-Key
 
   schemas:
-
     MaterialRequest:
       type: object
       required: [company_id, material_name, sku_code, gtin, manufacturer]
@@ -343,6 +496,175 @@ components:
         lot:
           type: string
         qty:
+          type: integer
+
+    # ---------------------------
+    # QUERY SCHEMAS (YENİ)
+    # ---------------------------
+
+    OrderQueryResponse:
+      type: object
+      required: [company_id, entity_type, entity_id, event_key, status, timestamp, data]
+      properties:
+        company_id:
+          type: string
+          example: "T1006"
+        entity_type:
+          type: string
+          example: "ORDER"
+        entity_id:
+          type: string
+          example: "54321"
+        event_key:
+          type: string
+          description: receiving | picking | shipping vb.
+          example: "shipping"
+        status:
+          type: string
+          description: started | completed | failed vb.
+          example: "completed"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        data:
+          $ref: "#/components/schemas/OrderQueryData"
+
+    OrderQueryData:
+      type: object
+      required: [order_type, warehouse_code, items]
+      properties:
+        order_type:
+          type: string
+          description: inbound | outbound
+          example: "outbound"
+        warehouse_code:
+          type: string
+          example: "T1006"
+        customer_code:
+          type: string
+          nullable: true
+          example: "120.04.020"
+        pts_transfer_id:
+          type: string
+          nullable: true
+          example: "11223456"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderQueryItem"
+
+    OrderQueryItem:
+      type: object
+      required: [sku, lot_number, quantity]
+      properties:
+        sku:
+          type: string
+          example: "1405-009"
+        lot_number:
+          type: string
+          example: "R2329047"
+        quantity:
+          type: integer
+          example: 7800
+
+    OrderQueryListItem:
+      type: object
+      required: [event_key, order_number, order_type, status, updated_at]
+      properties:
+        event_key:
+          type: string
+          example: "shipping"
+        order_number:
+          type: string
+          example: "54321"
+        order_type:
+          type: string
+          example: "outbound"
+        status:
+          type: string
+          example: "completed"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    StockQueryResponse:
+      type: object
+      required: [type, warehouse_id, updated_at, stock_status, summary]
+      properties:
+        type:
+          type: string
+          example: "STOCK"
+        warehouse_id:
+          type: string
+          example: "T1006"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-01-01T13:45:00Z"
+        stock_status:
+          $ref: "#/components/schemas/StockStatus"
+        summary:
+          $ref: "#/components/schemas/StockSummary"
+
+    StockStatus:
+      type: object
+      required: [available, quarantine, staging, unconfirmed]
+      properties:
+        available:
+          $ref: "#/components/schemas/StockBucket"
+        quarantine:
+          $ref: "#/components/schemas/StockBucket"
+        staging:
+          $ref: "#/components/schemas/StockBucket"
+        unconfirmed:
+          $ref: "#/components/schemas/StockBucket"
+
+    StockBucket:
+      type: object
+      required: [description, items, total_items, total_quantity]
+      properties:
+        description:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StockItem"
+        total_items:
+          type: integer
+        total_quantity:
+          type: integer
+
+    StockItem:
+      type: object
+      required: [sku, lot_number, quantity]
+      properties:
+        sku:
+          type: string
+        lot_number:
+          type: string
+        quantity:
+          type: integer
+
+    StockSummary:
+      type: object
+      required:
+        - grand_total_quantity
+        - total_available_quantity
+        - total_quarantine_quantity
+        - total_staging_quantity
+        - total_unconfirmed_quantity
+      properties:
+        grand_total_quantity:
+          type: integer
+        total_available_quantity:
+          type: integer
+        total_quarantine_quantity:
+          type: integer
+        total_staging_quantity:
+          type: integer
+        total_unconfirmed_quantity:
           type: integer
 
     GenericSuccessResponse:
