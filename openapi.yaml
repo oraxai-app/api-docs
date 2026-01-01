@@ -181,39 +181,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/GenericErrorResponse"
 
-  /query/list/order:
-    get:
-      tags: [Query]
-      summary: Order query list (liste)
-      description: Son güncellenen order event listesini getirir.
-      security:
-        - ApiKeyAuth: []
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/OrderQueryListItem"
-              example:
-                - event_key: "receiving"
-                  order_number: "12345"
-                  order_type: "inbound"
-                  status: "started"
-                  updated_at: "2024-01-15T10:30:00Z"
-                - event_key: "shipping"
-                  order_number: "54321"
-                  order_type: "outbound"
-                  status: "completed"
-                  updated_at: "2024-01-15T10:30:00Z"
-                - event_key: "picking"
-                  order_number: "88888"
-                  order_type: "outbound"
-                  status: "started"
-                  updated_at: "2024-01-15T10:30:00Z"
-
   /query/stock/{warehouse_id}:
     get:
       tags: [Query]
@@ -567,27 +534,6 @@ components:
         quantity:
           type: integer
           example: 7800
-
-    OrderQueryListItem:
-      type: object
-      required: [event_key, order_number, order_type, status, updated_at]
-      properties:
-        event_key:
-          type: string
-          example: "shipping"
-        order_number:
-          type: string
-          example: "54321"
-        order_type:
-          type: string
-          example: "outbound"
-        status:
-          type: string
-          example: "completed"
-        updated_at:
-          type: string
-          format: date-time
-          example: "2024-01-15T10:30:00Z"
 
     StockQueryResponse:
       type: object
