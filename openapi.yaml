@@ -181,6 +181,44 @@ paths:
               schema:
                 $ref: "#/components/schemas/GenericErrorResponse"
 
+  /query/list/order:
+    get:
+      tags: [Query]
+      summary: Order list query (tarih aralığı ile)
+      description: |
+        Order event kayıtlarını listeler.
+        start_date ve end_date opsiyoneldir. Format: YYYY-MM-DD
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: start_date
+          in: query
+          required: false
+          description: Başlangıç tarihi (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+          example: "2025-01-01"
+        - name: end_date
+          in: query
+          required: false
+          description: Bitiş tarihi (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+          example: "2025-01-31"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderListQueryResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+
   /query/stock/{warehouse_id}:
     get:
       tags: [Query]
@@ -466,188 +504,4 @@ components:
           type: integer
 
     # ---------------------------
-    # QUERY SCHEMAS (YENİ)
-    # ---------------------------
-
-    OrderQueryResponse:
-      type: object
-      required: [company_id, entity_type, entity_id, event_key, status, timestamp, data]
-      properties:
-        company_id:
-          type: string
-          example: "T1006"
-        entity_type:
-          type: string
-          example: "ORDER"
-        entity_id:
-          type: string
-          example: "54321"
-        event_key:
-          type: string
-          description: receiving | picking | shipping vb.
-          example: "shipping"
-        status:
-          type: string
-          description: started | completed | failed vb.
-          example: "completed"
-        timestamp:
-          type: string
-          format: date-time
-          example: "2024-01-15T10:30:00Z"
-        data:
-          $ref: "#/components/schemas/OrderQueryData"
-
-    OrderQueryData:
-      type: object
-      required: [order_type, warehouse_code, items]
-      properties:
-        order_type:
-          type: string
-          description: inbound | outbound
-          example: "outbound"
-        warehouse_code:
-          type: string
-          example: "T1006"
-        customer_code:
-          type: string
-          nullable: true
-          example: "120.04.020"
-        pts_transfer_id:
-          type: string
-          nullable: true
-          example: "11223456"
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/OrderQueryItem"
-
-    OrderQueryItem:
-      type: object
-      required: [sku, lot_number, quantity]
-      properties:
-        sku:
-          type: string
-          example: "1405-009"
-        lot_number:
-          type: string
-          example: "R2329047"
-        quantity:
-          type: integer
-          example: 7800
-
-    StockQueryResponse:
-      type: object
-      required: [type, warehouse_id, updated_at, stock_status, summary]
-      properties:
-        type:
-          type: string
-          example: "STOCK"
-        warehouse_id:
-          type: string
-          example: "T1006"
-        updated_at:
-          type: string
-          format: date-time
-          example: "2025-01-01T13:45:00Z"
-        stock_status:
-          $ref: "#/components/schemas/StockStatus"
-        summary:
-          $ref: "#/components/schemas/StockSummary"
-
-    StockStatus:
-      type: object
-      required: [available, quarantine, staging, unconfirmed]
-      properties:
-        available:
-          $ref: "#/components/schemas/StockBucket"
-        quarantine:
-          $ref: "#/components/schemas/StockBucket"
-        staging:
-          $ref: "#/components/schemas/StockBucket"
-        unconfirmed:
-          $ref: "#/components/schemas/StockBucket"
-
-    StockBucket:
-      type: object
-      required: [description, items, total_items, total_quantity]
-      properties:
-        description:
-          type: string
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/StockItem"
-        total_items:
-          type: integer
-        total_quantity:
-          type: integer
-
-    StockItem:
-      type: object
-      required: [sku, lot_number, quantity]
-      properties:
-        sku:
-          type: string
-        lot_number:
-          type: string
-        quantity:
-          type: integer
-
-    StockSummary:
-      type: object
-      required:
-        - grand_total_quantity
-        - total_available_quantity
-        - total_quarantine_quantity
-        - total_staging_quantity
-        - total_unconfirmed_quantity
-      properties:
-        grand_total_quantity:
-          type: integer
-        total_available_quantity:
-          type: integer
-        total_quarantine_quantity:
-          type: integer
-        total_staging_quantity:
-          type: integer
-        total_unconfirmed_quantity:
-          type: integer
-
-    GenericSuccessResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        order_number:
-          type: string
-          nullable: true
-
-    GenericUpsertResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        action:
-          type: string
-          enum: [CREATED, UPDATED]
-        message:
-          type: string
-
-    GenericErrorResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        errors:
-          type: array
-          items:
-            type: object
-            properties:
-              field:
-                type: string
-              message:
-                type: string
+    #
