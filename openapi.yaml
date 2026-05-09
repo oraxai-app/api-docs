@@ -153,7 +153,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/OrderQueryResponse"
               example:
-                company_id: "T1006"
+                company_id: "1006"
                 data:
                   customer_code: "120.04.020"
                   items:
@@ -168,7 +168,7 @@ paths:
                       sku: "1201-111026"
                   order_type: "outbound"
                   pts_transfer_id: "11223456"
-                  warehouse_code: "T1006"
+                  warehouse_code: "1006"
                 entity_id: "54321"
                 entity_type: "ORDER"
                 event_key: "shipping"
