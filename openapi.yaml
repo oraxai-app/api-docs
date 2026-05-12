@@ -136,7 +136,7 @@ paths:
             schema:
               $ref: "#/components/schemas/ReturnOrderRequest"
             example:
-              company_id: "T1006"
+              company_id: "1006"
               return_id: "RET-2026-001234"
               invoice_number: "1111111"
               invoice_date: "2026-01-10"
@@ -524,7 +524,7 @@ components:
       properties:
         company_id:
           type: string
-          enum: ["T1006"]
+          enum: ["1006"]
         return_id:
           type: string
           description: "Firma tarafından üretilen iade referans numarası."
