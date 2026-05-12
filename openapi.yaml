@@ -18,6 +18,8 @@ tags:
     description: Müşteri/Cari servisleri
   - name: Inbound
     description: Depo giriş (pre-advice) servisleri
+  - name: Return
+    description: İade (return) servisleri
   - name: Shipment
     description: Sevkiyat servisleri
   - name: Query
@@ -106,6 +108,60 @@ paths:
                 $ref: "#/components/schemas/GenericSuccessResponse"
         "409":
           description: Duplicate invoice_number
+
+  /return-order:
+    post:
+      tags: [Return]
+      summary: Return order create (iade bildirimi)
+      description: |
+        İlaç firması, fiziksel olarak iade deposuna alınan ürünler için
+        her kalemin gideceği hedef depoyu bu endpoint ile bildirir.
+
+        Hedef depo kodları:
+        - 1006: Mamul Depo
+        - 10062: Karantina Depo
+        - 10063: Sekonder Depo
+        - 10064: İade Depo
+        - 10065: İmha Depo
+
+        Her item kendi `warehouse_code` (hedef depo), `gtin`, `lot`, `quantity`
+        ve seri numaraları (`serial_numbers`) ile gönderilir. `serial_numbers`
+        listesinin uzunluğu `quantity` ile eşit olmalıdır.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReturnOrderRequest"
+            example:
+              company_id: "T1006"
+              return_id: "RET-2026-001234"
+              invoice_number: "1111111"
+              invoice_date: "2026-01-10"
+              items:
+                - warehouse_code: "1006"
+                  sku_code: "1201-062"
+                  gtin: "08699502270589"
+                  lot: "FLB01813"
+                  production_date: "2025-06-01"
+                  expiry_date: "2027-06-01"
+                  quantity: 2
+                  serial_numbers: ["SN001", "SN002"]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccessResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
 
   /shipment-order:
     post:
@@ -456,6 +512,86 @@ components:
         expiry_date:
           type: string
           format: date
+
+    ReturnOrderRequest:
+      type: object
+      required:
+        - company_id
+        - return_id
+        - invoice_number
+        - invoice_date
+        - items
+      properties:
+        company_id:
+          type: string
+          enum: ["T1006"]
+        return_id:
+          type: string
+          description: "Firma tarafından üretilen iade referans numarası."
+          example: "RET-2026-001234"
+        invoice_number:
+          type: string
+        invoice_date:
+          type: string
+          format: date
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/ReturnOrderItem"
+
+    ReturnOrderItem:
+      type: object
+      required:
+        - warehouse_code
+        - sku_code
+        - gtin
+        - lot
+        - production_date
+        - expiry_date
+        - quantity
+        - serial_numbers
+      properties:
+        warehouse_code:
+          type: string
+          description: "Bu kalemin alınacağı hedef depo kodu."
+          oneOf:
+            - title: "1006 - Mamul Depo"
+              enum: ["1006"]
+            - title: "10062 - Karantina Depo"
+              enum: ["10062"]
+            - title: "10063 - Sekonder Depo"
+              enum: ["10063"]
+            - title: "10064 - İade Depo"
+              enum: ["10064"]
+            - title: "10065 - İmha Depo"
+              enum: ["10065"]
+          example: "1006"
+        sku_code:
+          type: string
+        gtin:
+          type: string
+          description: "SKU için kayıtlı GTIN."
+          example: "08699502270589"
+        lot:
+          type: string
+        production_date:
+          type: string
+          format: date
+        expiry_date:
+          type: string
+          format: date
+        quantity:
+          type: number
+          description: "Bu kalemdeki birim sayısı. serial_numbers uzunluğu ile eşit olmalı."
+          example: 2
+        serial_numbers:
+          type: array
+          minItems: 1
+          description: "Karekod seri numaraları. Uzunluğu quantity ile eşit olmalı."
+          items:
+            type: string
+          example: ["SN001", "SN002"]
 
     ShipmentOrderRequest:
       type: object
