@@ -351,9 +351,8 @@ paths:
       description: |
         Satın alma siparişinin uçtan uca akıbetini TEK çağrıda döner:
 
-        1. `data.integration` — mesajı aldık mı, kabul mü edildi red mi
-           (`applied` / `received` / `failed` / `rejected` + `error_code`)
-        2. `status` — PO'nun WMS'teki durumu: `pending` | `converted` | `cancelled`
+        1. `status` — PO'nun WMS'teki durumu: `pending` | `converted` | `cancelled`
+        2. `data.items` — sipariş kalemleri
         3. `data.inbound_order` — dönüşümden doğan giriş siparişi: durumu,
            durum tarihçesi ve kalem bazında GERÇEKLEŞEN miktar
            (`received_qty`), lot, son kullanma tarihi
@@ -364,9 +363,10 @@ paths:
         olur; dolduğunda siparişin durumunu, durum tarihçesini ve kalem
         bazında gerçekleşen miktarı verir.
 
-        PO WMS'e hiç yazılamamışsa uç 404 DEĞİL, mesajın akıbetini döner
-        (`event_key: purchase_order_not_applied`) — "kabul edildi ama işlenemedi"
-        durumunun cevabı budur. Ne PO ne de mesaj kaydı varsa 404.
+        Bu uç YALNIZ WMS kaydını okur. "Mesajı aldınız mı, işlendi mi" sorusunun
+        yeri ayrıdır: yazma cevabında dönen `message_id` ile
+        `GET /v2/messages/{message_id}`. Kayıt burada görünüyorsa mesaj zaten
+        işlenmiş demektir.
       security:
         - ApiKeyAuth: []
       parameters:
@@ -391,7 +391,7 @@ paths:
                   event_key:
                     type: string
                     enum: [purchase_order_pending, purchase_order_converted,
-                           purchase_order_cancelled, purchase_order_not_applied]
+                           purchase_order_cancelled]
                   status: { type: string }
                   timestamp: { type: string, format: date-time }
                   data: { type: object }
@@ -411,14 +411,6 @@ paths:
                   items:
                     - sku_code: "99999-TEST"
                       quantity: 200
-                  integration:
-                    message_id: "3f2b1c40-9a77-4c1e-9f0a-1c2d3e4f5a6b"
-                    status: "applied"
-                    action: "created"
-                    error_code: null
-                    error_message: null
-                    received_at: "2026-08-25T06:59:58Z"
-                    processed_at: "2026-08-25T07:00:02Z"
                   inbound_order:
                     order_number: "GIR-2026-0042"
                     status: "completed"
@@ -441,8 +433,9 @@ paths:
                         expiry_date: "2028-01-01"
         "404":
           description: |
-            Ne satın alma siparişi ne de mesaj kaydı bulundu
-            (error_code: purchase_order_not_found).
+            Bu numarayla satın alma siparişi bulunamadı
+            (error_code: purchase_order_not_found). Gönderdiğiniz mesajın
+            akıbetini GET /v2/messages/{message_id} ile sorgulayın.
           content:
             application/json:
               schema:
@@ -455,8 +448,8 @@ paths:
       description: |
         Transfer talimatının uçtan uca akıbetini TEK çağrıda döner:
 
-        1. `data.integration` — mesajı aldık mı, kabul mü edildi red mi
-        2. `status` — talimatın WMS'teki durumu: `pending` | `converted` | `cancelled`
+        1. `status` — talimatın WMS'teki durumu: `pending` | `converted` | `cancelled`
+        2. `data.items` — kalemler ve `lot_resolved` bayrağı
         3. `data.outbound_order` — dönüşümden doğan çıkış siparişi: durumu,
            durum tarihçesi ve kalem bazında TOPLANAN miktar (`picked_qty`)
 
@@ -466,10 +459,12 @@ paths:
         **çıkışa dönüştürülemez**. `false` görüyorsanız talimatın neden
         ilerlemediğinin cevabı budur; lot düzeltilince dönüşüm açılır.
 
-        `data.outbound_order` dönüşüm yapılmadıysa `null` olur. Talimat WMS'e
-        hiç yazılamamışsa uç 404 DEĞİL, mesajın akıbetini döner
-        (`event_key: warehouse_transfer_not_applied`). Ne talimat ne de mesaj
-        kaydı varsa 404.
+        `data.outbound_order` dönüşüm yapılmadıysa `null` olur.
+
+        Bu uç YALNIZ WMS kaydını okur. "Mesajı aldınız mı, işlendi mi" sorusunun
+        yeri ayrıdır: yazma cevabında dönen `message_id` ile
+        `GET /v2/messages/{message_id}`. Kayıt burada görünüyorsa mesaj zaten
+        işlenmiş demektir.
       security:
         - ApiKeyAuth: []
       parameters:
@@ -494,7 +489,7 @@ paths:
                   event_key:
                     type: string
                     enum: [warehouse_transfer_pending, warehouse_transfer_converted,
-                           warehouse_transfer_cancelled, warehouse_transfer_not_applied]
+                           warehouse_transfer_cancelled]
                   status: { type: string }
                   timestamp: { type: string, format: date-time }
                   data: { type: object }
@@ -516,19 +511,12 @@ paths:
                       quantity: 20
                       lot: "R2329047"
                       lot_resolved: true
-                  integration:
-                    message_id: "3f2b1c40-9a77-4c1e-9f0a-1c2d3e4f5a6b"
-                    status: "applied"
-                    action: "created"
-                    error_code: null
-                    error_message: null
-                    received_at: "2026-08-27T11:59:58Z"
-                    processed_at: "2026-08-27T12:00:02Z"
                   outbound_order: null
         "404":
           description: |
-            Ne transfer talimatı ne de mesaj kaydı bulundu
-            (error_code: warehouse_transfer_not_found).
+            Bu numarayla transfer talimatı bulunamadı
+            (error_code: warehouse_transfer_not_found). Gönderdiğiniz mesajın
+            akıbetini GET /v2/messages/{message_id} ile sorgulayın.
           content:
             application/json:
               schema:
@@ -539,15 +527,16 @@ paths:
       tags: [Query]
       summary: Firmaya ait ambar durum sorgusu
       description: |
-        Ambarın WMS'teki güncel hali + gönderdiğiniz mesajın akıbeti.
+        Ambarın WMS'teki güncel hali.
 
         Ana veri akışı olduğu için siparişteki gibi bir yaşam döngüsü yoktur;
         `status` yalnız `active` ya da `passive` döner. Silme olmadığı için
         kapatılan ambar kaybolmaz, `passive` olarak görünür.
 
-        Ambar WMS'e hiç yazılamamışsa uç 404 DEĞİL, mesajın akıbetini döner
-        (`event_key: company_warehouse_not_applied`). Ne kayıt ne de mesaj
-        varsa 404.
+        Bu uç YALNIZ WMS kaydını okur. "Mesajı aldınız mı, işlendi mi" sorusunun
+        yeri ayrıdır: yazma cevabında dönen `message_id` ile
+        `GET /v2/messages/{message_id}`. Kayıt burada görünüyorsa mesaj zaten
+        işlenmiş demektir.
       security:
         - ApiKeyAuth: []
       parameters:
@@ -570,8 +559,7 @@ paths:
                   entity_id: { type: string }
                   event_key:
                     type: string
-                    enum: [company_warehouse_active, company_warehouse_passive,
-                           company_warehouse_not_applied]
+                    enum: [company_warehouse_active, company_warehouse_passive]
                   status: { type: string, enum: [active, passive] }
                   timestamp: { type: string, format: date-time }
                   data: { type: object }
@@ -589,18 +577,11 @@ paths:
                   is_active: true
                   created_at: "2026-08-27T12:00:00Z"
                   updated_at: "2026-08-27T12:00:00Z"
-                  integration:
-                    message_id: "3f2b1c40-9a77-4c1e-9f0a-1c2d3e4f5a6b"
-                    status: "applied"
-                    action: "created"
-                    error_code: null
-                    error_message: null
-                    received_at: "2026-08-27T11:59:58Z"
-                    processed_at: "2026-08-27T12:00:02Z"
         "404":
           description: |
-            Ne ambar kaydı ne de mesaj kaydı bulundu
-            (error_code: company_warehouse_not_found).
+            Bu kodla firmaya ait ambar bulunamadı
+            (error_code: company_warehouse_not_found). Gönderdiğiniz mesajın
+            akıbetini GET /v2/messages/{message_id} ile sorgulayın.
           content:
             application/json:
               schema:
@@ -643,6 +624,101 @@ paths:
           description: Unauthorized
         "403":
           description: Forbidden
+
+  /query/list/warehouse-transfer:
+    get:
+      tags: [Query]
+      summary: Ambar transfer talimatı listesi (keşif)
+      description: |
+        Bir tarih aralığındaki transfer talimatlarını listeler. **Numarasını
+        bilmediğiniz talimatları bulmak içindir**; ayrıntı için dönen
+        `transfer_number` ile `/query/warehouse-transfer/{transfer_number}`
+        çağrılır.
+
+        **`origin` alanı bu ucun asıl sebebidir.** Talimat WMS'te operatör
+        tarafından da açılabilir; o kayıttan sizin haberiniz olmaz. Liste
+        kaynak tablodan okunduğu için ikisi de görünür:
+
+        - `integration` — sizin gönderdiğiniz
+        - `wms` — WMS içinde açılmış, sizde karşılığı yok
+
+        `start_date` ve `end_date` BİRLİKTE verilir ya da hiç verilmez; aralık
+        30 günü aşamaz. Parametresiz çağrıda son 30 gün döner. Sonuçlar
+        `updated_at` azalan sırada, en çok 1000 kayıt.
+
+        Not: `/query/list/order` ucundan farklı olarak burada varsayılan bir
+        durum süzgeci YOKTUR — transferde `completed` diye bir durum yok.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: start_date
+          in: query
+          required: false
+          description: Başlangıç. YYYY-MM-DD ya da RFC3339. end_date ile birlikte verilir.
+          schema: { type: string, format: date }
+          example: "2026-08-01"
+        - name: end_date
+          in: query
+          required: false
+          description: Bitiş. start_date ile birlikte verilir.
+          schema: { type: string, format: date }
+          example: "2026-08-27"
+        - name: status
+          in: query
+          required: false
+          description: Tek duruma süzer. Verilmezse tüm durumlar döner.
+          schema:
+            type: string
+            enum: [pending, converted, cancelled]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    transfer_number: { type: string }
+                    status: { type: string, enum: [pending, converted, cancelled] }
+                    event_key: { type: string }
+                    target_warehouse_code: { type: string }
+                    ship_date: { type: string, format: date }
+                    origin:
+                      type: string
+                      enum: [integration, wms]
+                      description: |
+                        integration = sizin gönderdiğiniz, wms = WMS içinde
+                        açılmış (sizde karşılığı yok).
+                    created_at: { type: string, format: date-time }
+                    updated_at: { type: string, format: date-time }
+              example:
+                - transfer_number: "10061RP0000004"
+                  status: "pending"
+                  event_key: "warehouse_transfer_pending"
+                  target_warehouse_code: "12345"
+                  ship_date: "2026-08-27"
+                  origin: "integration"
+                  created_at: "2026-08-27T10:58:11Z"
+                  updated_at: "2026-08-27T10:58:11Z"
+                - transfer_number: "10061RP0000009"
+                  status: "converted"
+                  event_key: "warehouse_transfer_converted"
+                  target_warehouse_code: "12345"
+                  ship_date: "2026-08-28"
+                  origin: "wms"
+                  created_at: "2026-08-27T13:40:00Z"
+                  updated_at: "2026-08-27T14:05:00Z"
+        "400":
+          description: |
+            Tarih kuralı ihlali (error_code: invalid_date ya da missing_field):
+            aralık 30 günü aşıyor, start_date > end_date, ya da ikisinden
+            yalnız biri verilmiş.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /query/stock/{warehouse_id}:
     get:
