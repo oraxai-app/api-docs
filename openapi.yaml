@@ -109,6 +109,45 @@ paths:
         "409":
           description: Duplicate invoice_number
 
+  /purchase-order:
+    post:
+      tags: [Inbound]
+      summary: Purchase order create (satın alma siparişi)
+      description: |
+        Satın alma siparişi — mal depoya gelmeden ÖNCE açılır.
+        Inbound (gerçekleşmiş alım) ile aynı yapıdadır ancak
+        invoice_number, invoice_date, pts_transfer_id ve lot/tarih
+        bilgileri BULUNMAZ (satın alma aşamasında lot henüz belli değildir).
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseOrderRequest"
+            example:
+              company_id: "1006"
+              warehouse_code: "1006"
+              supplier_code: "SUP-001"
+              order_number: "MMMEE2"
+              items:
+                - sku_code: "99999-TEST"
+                  quantity: 200
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericSuccessResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+
   /return-order:
     post:
       tags: [Return]
@@ -512,6 +551,45 @@ components:
         expiry_date:
           type: string
           format: date
+
+    PurchaseOrderRequest:
+      type: object
+      required:
+        - company_id
+        - warehouse_code
+        - order_number
+        - items
+      properties:
+        company_id:
+          type: string
+          enum: ["T1006"]
+        warehouse_code:
+          type: string
+          enum: ["T1006"]
+        supplier_code:
+          type: string
+          nullable: true
+          description: "Opsiyonel. Tedarikçi (cari) kodu."
+          example: "SUP-001"
+        order_number:
+          type: string
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/PurchaseOrderItem"
+
+    PurchaseOrderItem:
+      type: object
+      required:
+        - sku_code
+        - quantity
+      properties:
+        sku_code:
+          type: string
+        quantity:
+          type: number
+          description: "Sipariş edilen miktar. String ('200') veya sayı olarak gönderilebilir."
 
     ReturnOrderRequest:
       type: object
