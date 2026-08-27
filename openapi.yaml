@@ -656,6 +656,7 @@ components:
             pencerede material_not_found alabilir.
         quantity:
           type: number
+          description: "Miktar. Ondalıklı olabilir. Sayı ya da string olarak gönderilebilir; string'de virgül de kabul edilir ('12,5' → 12.5)."
         lot:
           type: string
         production_date:
@@ -711,7 +712,7 @@ components:
             pencerede material_not_found alabilir.
         quantity:
           type: number
-          description: "Sipariş edilen miktar. String ('200') veya sayı olarak gönderilebilir."
+          description: "Miktar. Ondalıklı olabilir. Sayı ya da string olarak gönderilebilir; string'de virgül de kabul edilir ('12,5' → 12.5)."
 
     ReturnOrderRequest:
       type: object
@@ -846,7 +847,8 @@ components:
         lot:
           type: string
         qty:
-          type: integer
+          type: number
+          description: "Miktar. Ondalıklı olabilir. Sayı ya da string olarak gönderilebilir; string'de virgül de kabul edilir ('12,5' → 12.5)."
 
     # ---------------------------
     #
