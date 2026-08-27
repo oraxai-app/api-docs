@@ -84,6 +84,74 @@ paths:
               schema:
                 $ref: "#/components/schemas/GenericUpsertResponse"
 
+  /company-warehouse:
+    post:
+      tags: [Company Warehouse]
+      summary: Firmaya ait ambar upsert
+      description: |
+        Firmanın WMS dışındaki kendi ambarı — **ambar transferi talimatlarının
+        hedefidir**. WMS'te ayrı bir tablo değildir; müşteri kaydı üzerinde
+        "firmaya ait ambar" bayrağıyla tutulur ve müşteri listelerinde görünmez.
+
+        **Kod kimliktir:** `warehouse_code` firma içinde benzersiz upsert
+        anahtarıdır. Aynı kodla tekrar gönderim mevcut kaydı GÜNCELLER
+        (`action: updated`), farklı kod YENİ ambar açar. Entegrasyondan kod
+        değiştirilemez.
+
+        **Silme yoktur.** Kapatmak için `status` alanına `"0"`, `"passive"`,
+        `"inactive"` ya da `"false"` gönderin; bunların dışındaki her değer
+        aktif sayılır.
+
+        Ambar kodu bir müşteri koduyla aynı olabilir — kodlar ayrı alanlardır,
+        çakışma hata değildir.
+
+        Bu akışta GLN alanı yoktur: transfer çıkışları İTS ve irsaliye
+        kapılarını atladığı için gölge kayıtta GLN boş tutulur.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompanyWarehouseRequest"
+            example:
+              company_id: "1006"
+              warehouse_code: "12345"
+              warehouse_name: "Test Ambar"
+              address: "test 1234"
+              status: "active"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+                  warehouse_code: { type: string }
+                  action:
+                    type: string
+                    enum: [created, updated, unchanged]
+                  message_id: { type: string, format: uuid }
+              example:
+                success: true
+                message: "Company warehouse created."
+                warehouse_code: "12345"
+                action: "created"
+                message_id: "3f2b1c40-9a77-4c1e-9f0a-1c2d3e4f5a6b"
+        "400":
+          description: |
+            Doğrulama hatası (error_code: missing_field). warehouse_name ve
+            address boş GELEMEZ — yalnız boşluk göndermek de boş sayılır,
+            alanlar kırpıldıktan sonra denetlenir.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /inbound-order:
     post:
       tags: [Inbound]
@@ -378,7 +446,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GenericErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse"
 
   /query/list/order:
     get:
@@ -596,6 +664,66 @@ components:
           type: object
           nullable: true
           additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      description: |
+        Ortak hata zarfı — core::error::AppError bütün 4xx/5xx cevaplarını
+        bu şekilde döner. `errors[]` alan bazlı listedir, `error_code` makine
+        okur özet koddur, `trace_id` sunucu loglarıyla eşleştirmek içindir.
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Validation Error"
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+        error_code:
+          type: string
+          example: "missing_field"
+        trace_id:
+          type: string
+          format: uuid
+
+    CompanyWarehouseRequest:
+      type: object
+      required:
+        - company_id
+        - warehouse_code
+        - warehouse_name
+        - address
+        - status
+      properties:
+        company_id:
+          type: string
+          description: "API anahtarının firmasıyla eşleşmelidir."
+        warehouse_code:
+          type: string
+          description: |
+            Firma içinde benzersiz upsert anahtarı. Kaydın kimliğidir;
+            entegrasyondan değiştirilemez, farklı kod yeni ambar açar.
+        warehouse_name:
+          type: string
+          description: "Boş gelemez."
+        address:
+          type: string
+          description: |
+            ZORUNLU, boş gelemez — ambar "Adrese Teslimat" hedefidir ve
+            transfer çıkışının sevk adresi budur. (Müşteri akışının aksine
+            burada adres opsiyonel DEĞİLDİR.)
+        status:
+          type: string
+          description: |
+            "0", "passive", "inactive", "false" → pasif; bunların dışındaki
+            her değer aktif sayılır.
+          example: "active"
 
     InboundOrderRequest:
       type: object
