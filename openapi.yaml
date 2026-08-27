@@ -286,20 +286,19 @@ paths:
         1. `data.integration` — mesajı aldık mı, kabul mü edildi red mi
            (`applied` / `received` / `failed` / `rejected` + `error_code`)
         2. `status` — PO'nun WMS'teki durumu: `pending` | `converted` | `cancelled`
-        3. `data.inbound_order` — dönüşümden doğan giriş siparişi: kendi
-           numarası, durumu, durum tarihçesi ve kalem bazında GERÇEKLEŞEN
-           miktar (`received_qty`), lot, son kullanma tarihi
+        3. `data.inbound_order` — dönüşümden doğan giriş siparişi: durumu,
+           durum tarihçesi ve kalem bazında GERÇEKLEŞEN miktar
+           (`received_qty`), lot, son kullanma tarihi
 
-        Dönüşümden doğan giriş siparişinin numarası PO numarasından FARKLIDIR
-        (irsaliye numarasını WMS operatörü girer) — bu uç onu size bildirir.
-        `data.inbound_order` henüz dönüşüm yapılmadıysa `null` olur.
+        Dönüşümden doğan giriş siparişi PO ile AYNI numarayı taşır: WMS'in
+        dönüşüm ekranı sipariş no ve referans no alanlarını PO numarasıyla
+        doldurup kilitler. `data.inbound_order` dönüşüm yapılmadıysa `null`
+        olur; dolduğunda siparişin durumunu, durum tarihçesini ve kalem
+        bazında gerçekleşen miktarı verir.
 
         PO WMS'e hiç yazılamamışsa uç 404 DEĞİL, mesajın akıbetini döner
         (`event_key: purchase_order_not_applied`) — "kabul edildi ama işlenemedi"
         durumunun cevabı budur. Ne PO ne de mesaj kaydı varsa 404.
-
-        Kaynak replikadır; CDC nedeniyle birkaç saniye gecikme normaldir.
-        Yol parçası `purchase-order` ya da `purchase_order` yazılabilir.
       security:
         - ApiKeyAuth: []
       parameters:
