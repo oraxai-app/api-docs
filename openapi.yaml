@@ -276,6 +276,111 @@ paths:
               schema:
                 $ref: "#/components/schemas/GenericErrorResponse"
 
+  /query/purchase-order/{order_number}:
+    get:
+      tags: [Query]
+      summary: Purchase order durum sorgusu
+      description: |
+        Satın alma siparişinin uçtan uca akıbetini TEK çağrıda döner:
+
+        1. `data.integration` — mesajı aldık mı, kabul mü edildi red mi
+           (`applied` / `received` / `failed` / `rejected` + `error_code`)
+        2. `status` — PO'nun WMS'teki durumu: `pending` | `converted` | `cancelled`
+        3. `data.inbound_order` — dönüşümden doğan giriş siparişi: kendi
+           numarası, durumu, durum tarihçesi ve kalem bazında GERÇEKLEŞEN
+           miktar (`received_qty`), lot, son kullanma tarihi
+
+        Dönüşümden doğan giriş siparişinin numarası PO numarasından FARKLIDIR
+        (irsaliye numarasını WMS operatörü girer) — bu uç onu size bildirir.
+        `data.inbound_order` henüz dönüşüm yapılmadıysa `null` olur.
+
+        PO WMS'e hiç yazılamamışsa uç 404 DEĞİL, mesajın akıbetini döner
+        (`event_key: purchase_order_not_applied`) — "kabul edildi ama işlenemedi"
+        durumunun cevabı budur. Ne PO ne de mesaj kaydı varsa 404.
+
+        Kaynak replikadır; CDC nedeniyle birkaç saniye gecikme normaldir.
+        Yol parçası `purchase-order` ya da `purchase_order` yazılabilir.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: order_number
+          in: path
+          required: true
+          description: ERP'nin gönderdiği PO numarası.
+          schema:
+            type: string
+          example: "PO-1006-TEST-001"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  company_id: { type: string }
+                  entity_type: { type: string, enum: ["PURCHASE_ORDER"] }
+                  entity_id: { type: string }
+                  event_key:
+                    type: string
+                    enum: [purchase_order_pending, purchase_order_converted,
+                           purchase_order_cancelled, purchase_order_not_applied]
+                  status: { type: string }
+                  timestamp: { type: string, format: date-time }
+                  data: { type: object }
+              example:
+                company_id: "1006"
+                entity_type: "PURCHASE_ORDER"
+                entity_id: "PO-1006-TEST-001"
+                event_key: "purchase_order_converted"
+                status: "converted"
+                timestamp: "2026-08-27T09:15:00Z"
+                data:
+                  order_number: "PO-1006-TEST-001"
+                  warehouse_code: "1006"
+                  supplier_code: "SUP-001"
+                  created_at: "2026-08-25T07:00:00Z"
+                  updated_at: "2026-08-27T09:15:00Z"
+                  items:
+                    - sku_code: "99999-TEST"
+                      quantity: 200
+                  integration:
+                    message_id: "3f2b1c40-9a77-4c1e-9f0a-1c2d3e4f5a6b"
+                    status: "applied"
+                    action: "created"
+                    error_code: null
+                    error_message: null
+                    received_at: "2026-08-25T06:59:58Z"
+                    processed_at: "2026-08-25T07:00:02Z"
+                  inbound_order:
+                    order_number: "GIR-2026-0042"
+                    status: "completed"
+                    created_at: "2026-08-27T09:15:00Z"
+                    history:
+                      - from: null
+                        status: "awaiting_vehicle"
+                        at: "2026-08-27T09:15:00Z"
+                      - from: "awaiting_vehicle"
+                        status: "receiving_in_progress"
+                        at: "2026-08-27T10:02:11Z"
+                      - from: "receiving_in_progress"
+                        status: "completed"
+                        at: "2026-08-27T11:40:03Z"
+                    items:
+                      - sku_code: "99999-TEST"
+                        ordered_qty: 200
+                        received_qty: 198
+                        lot: "L-2026-08"
+                        expiry_date: "2028-01-01"
+        "404":
+          description: |
+            Ne satın alma siparişi ne de mesaj kaydı bulundu
+            (error_code: purchase_order_not_found).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenericErrorResponse"
+
   /query/list/order:
     get:
       tags: [Query]
