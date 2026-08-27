@@ -448,6 +448,164 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /query/warehouse-transfer/{transfer_number}:
+    get:
+      tags: [Query]
+      summary: Ambar transfer talimatı durum sorgusu
+      description: |
+        Transfer talimatının uçtan uca akıbetini TEK çağrıda döner:
+
+        1. `data.integration` — mesajı aldık mı, kabul mü edildi red mi
+        2. `status` — talimatın WMS'teki durumu: `pending` | `converted` | `cancelled`
+        3. `data.outbound_order` — dönüşümden doğan çıkış siparişi: durumu,
+           durum tarihçesi ve kalem bazında TOPLANAN miktar (`picked_qty`)
+
+        **`data.items[].lot_resolved` alanına dikkat edin.** Transfer
+        kalemlerinde lot zorunludur ama WMS lot kayıtlarında bulunamayan lot
+        REDDEDİLMEZ: kayıt kabul edilir, o kalem lota bağlanamaz ve talimat
+        **çıkışa dönüştürülemez**. `false` görüyorsanız talimatın neden
+        ilerlemediğinin cevabı budur; lot düzeltilince dönüşüm açılır.
+
+        `data.outbound_order` dönüşüm yapılmadıysa `null` olur. Talimat WMS'e
+        hiç yazılamamışsa uç 404 DEĞİL, mesajın akıbetini döner
+        (`event_key: warehouse_transfer_not_applied`). Ne talimat ne de mesaj
+        kaydı varsa 404.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: transfer_number
+          in: path
+          required: true
+          description: ERP'nin gönderdiği transfer numarası (v1 alan adı transfer_no).
+          schema:
+            type: string
+          example: "TR-2026-001"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  company_id: { type: string }
+                  entity_type: { type: string, enum: ["WAREHOUSE_TRANSFER"] }
+                  entity_id: { type: string }
+                  event_key:
+                    type: string
+                    enum: [warehouse_transfer_pending, warehouse_transfer_converted,
+                           warehouse_transfer_cancelled, warehouse_transfer_not_applied]
+                  status: { type: string }
+                  timestamp: { type: string, format: date-time }
+                  data: { type: object }
+              example:
+                company_id: "1006"
+                entity_type: "WAREHOUSE_TRANSFER"
+                entity_id: "TR-2026-001"
+                event_key: "warehouse_transfer_pending"
+                status: "pending"
+                timestamp: "2026-08-27T12:00:00Z"
+                data:
+                  transfer_number: "TR-2026-001"
+                  target_warehouse_code: "12345"
+                  ship_date: "2026-09-01"
+                  created_at: "2026-08-27T12:00:00Z"
+                  updated_at: "2026-08-27T12:00:00Z"
+                  items:
+                    - sku_code: "1405-009"
+                      quantity: 20
+                      lot: "R2329047"
+                      lot_resolved: true
+                  integration:
+                    message_id: "3f2b1c40-9a77-4c1e-9f0a-1c2d3e4f5a6b"
+                    status: "applied"
+                    action: "created"
+                    error_code: null
+                    error_message: null
+                    received_at: "2026-08-27T11:59:58Z"
+                    processed_at: "2026-08-27T12:00:02Z"
+                  outbound_order: null
+        "404":
+          description: |
+            Ne transfer talimatı ne de mesaj kaydı bulundu
+            (error_code: warehouse_transfer_not_found).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /query/company-warehouse/{warehouse_code}:
+    get:
+      tags: [Query]
+      summary: Firmaya ait ambar durum sorgusu
+      description: |
+        Ambarın WMS'teki güncel hali + gönderdiğiniz mesajın akıbeti.
+
+        Ana veri akışı olduğu için siparişteki gibi bir yaşam döngüsü yoktur;
+        `status` yalnız `active` ya da `passive` döner. Silme olmadığı için
+        kapatılan ambar kaybolmaz, `passive` olarak görünür.
+
+        Ambar WMS'e hiç yazılamamışsa uç 404 DEĞİL, mesajın akıbetini döner
+        (`event_key: company_warehouse_not_applied`). Ne kayıt ne de mesaj
+        varsa 404.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: warehouse_code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "12345"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  company_id: { type: string }
+                  entity_type: { type: string, enum: ["COMPANY_WAREHOUSE"] }
+                  entity_id: { type: string }
+                  event_key:
+                    type: string
+                    enum: [company_warehouse_active, company_warehouse_passive,
+                           company_warehouse_not_applied]
+                  status: { type: string, enum: [active, passive] }
+                  timestamp: { type: string, format: date-time }
+                  data: { type: object }
+              example:
+                company_id: "1006"
+                entity_type: "COMPANY_WAREHOUSE"
+                entity_id: "12345"
+                event_key: "company_warehouse_active"
+                status: "active"
+                timestamp: "2026-08-27T12:00:00Z"
+                data:
+                  warehouse_code: "12345"
+                  warehouse_name: "Test Ambar"
+                  address: "test 1234"
+                  is_active: true
+                  created_at: "2026-08-27T12:00:00Z"
+                  updated_at: "2026-08-27T12:00:00Z"
+                  integration:
+                    message_id: "3f2b1c40-9a77-4c1e-9f0a-1c2d3e4f5a6b"
+                    status: "applied"
+                    action: "created"
+                    error_code: null
+                    error_message: null
+                    received_at: "2026-08-27T11:59:58Z"
+                    processed_at: "2026-08-27T12:00:02Z"
+        "404":
+          description: |
+            Ne ambar kaydı ne de mesaj kaydı bulundu
+            (error_code: company_warehouse_not_found).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /query/list/order:
     get:
       tags: [Query]
