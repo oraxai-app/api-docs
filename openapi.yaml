@@ -541,6 +541,15 @@ components:
       properties:
         sku_code:
           type: string
+          description: |
+            WMS'te tanımlı malzeme kodu. Firmanın malzeme kartlarında yoksa
+            istek reddedilir: HTTP 400, error_code = material_not_found ve
+            errors[] içinde eksik olan her kalem items[i].sku_code alanıyla
+            tek tek listelenir. Eşleşme YALNIZ sku_code iledir,
+            alternate_sku_code ile değil.
+            Yeni malzeme /material ile açıldıysa WMS'e işlenmesi birkaç
+            saniye sürer; aynı SKU'yu hemen sipariş kaleminde göndermek bu
+            pencerede material_not_found alabilir.
         quantity:
           type: number
         lot:
@@ -587,6 +596,15 @@ components:
       properties:
         sku_code:
           type: string
+          description: |
+            WMS'te tanımlı malzeme kodu. Firmanın malzeme kartlarında yoksa
+            istek reddedilir: HTTP 400, error_code = material_not_found ve
+            errors[] içinde eksik olan her kalem items[i].sku_code alanıyla
+            tek tek listelenir. Eşleşme YALNIZ sku_code iledir,
+            alternate_sku_code ile değil.
+            Yeni malzeme /material ile açıldıysa WMS'e işlenmesi birkaç
+            saniye sürer; aynı SKU'yu hemen sipariş kaleminde göndermek bu
+            pencerede material_not_found alabilir.
         quantity:
           type: number
           description: "Sipariş edilen miktar. String ('200') veya sayı olarak gönderilebilir."
@@ -712,6 +730,15 @@ components:
       properties:
         sku:
           type: string
+          description: |
+            WMS'te tanımlı malzeme kodu. Firmanın malzeme kartlarında yoksa
+            istek reddedilir: HTTP 400, error_code = material_not_found ve
+            errors[] içinde eksik olan her kalem items[i].sku_code alanıyla
+            tek tek listelenir. Eşleşme YALNIZ sku_code iledir,
+            alternate_sku_code ile değil.
+            Yeni malzeme /material ile açıldıysa WMS'e işlenmesi birkaç
+            saniye sürer; aynı SKU'yu hemen sipariş kaleminde göndermek bu
+            pencerede material_not_found alabilir.
         lot:
           type: string
         qty:
