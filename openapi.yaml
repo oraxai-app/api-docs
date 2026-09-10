@@ -647,6 +647,13 @@ paths:
 
         Not: `/query/list/order` ucundan farklı olarak burada varsayılan bir
         durum süzgeci YOKTUR — transferde `completed` diye bir durum yok.
+
+        **Tarih süzgeci son harekete göredir:** talimatın kendisi ya da ondan
+        doğan çıkış siparişi, hangisi daha yeni güncellendiyse o zaman esas
+        alınır ve `updated_at` olarak döner. "Son 1 günde sevk edilenler"
+        tek çağrıyla bulunur: `outbound_status=completed`. Her satırda doğan
+        çıkışın durumu (`outbound_status`) ve sevk anı (`shipped_at`) vardır;
+        talimat dönüştürülmediyse ikisi de null.
       security:
         - ApiKeyAuth: []
       parameters:
@@ -669,6 +676,14 @@ paths:
           schema:
             type: string
             enum: [pending, converted, cancelled]
+        - name: outbound_status
+          in: query
+          required: false
+          description: |
+            Doğan çıkış siparişinin durumuna süzer; `completed` ile yalnız
+            sevk edilenler döner. Verilmezse süzülmez.
+          schema: { type: string }
+          example: completed
       responses:
         "200":
           description: OK
@@ -690,8 +705,20 @@ paths:
                       description: |
                         integration = sizin gönderdiğiniz, wms = WMS içinde
                         açılmış (sizde karşılığı yok).
+                    outbound_status:
+                      type: string
+                      nullable: true
+                      description: Doğan çıkış siparişinin durumu; dönüşüm yoksa null.
+                    shipped_at:
+                      type: string
+                      format: date-time
+                      nullable: true
+                      description: Sevk anı (WMS sevkiyat kapanışı); sevk edilmediyse null.
                     created_at: { type: string, format: date-time }
-                    updated_at: { type: string, format: date-time }
+                    updated_at:
+                      type: string
+                      format: date-time
+                      description: Son hareket — talimat ya da doğan çıkışın güncellenme zamanı, hangisi yeniyse.
               example:
                 - transfer_number: "10061RP0000004"
                   status: "pending"
@@ -699,6 +726,8 @@ paths:
                   target_warehouse_code: "12345"
                   ship_date: "2026-08-27"
                   origin: "integration"
+                  outbound_status: null
+                  shipped_at: null
                   created_at: "2026-08-27T10:58:11Z"
                   updated_at: "2026-08-27T10:58:11Z"
                 - transfer_number: "10061RP0000009"
@@ -707,6 +736,8 @@ paths:
                   target_warehouse_code: "12345"
                   ship_date: "2026-08-28"
                   origin: "wms"
+                  outbound_status: "completed"
+                  shipped_at: "2026-08-27T14:05:00Z"
                   created_at: "2026-08-27T13:40:00Z"
                   updated_at: "2026-08-27T14:05:00Z"
         "400":
