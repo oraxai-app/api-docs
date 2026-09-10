@@ -719,6 +719,120 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /query/list/purchase-order:
+    get:
+      tags: [Query]
+      summary: Satın alma siparişi listesi (keşif)
+      description: |
+        Bir tarih aralığındaki satın alma siparişlerini, her satırda doğan
+        giriş siparişinin akıbetiyle birlikte listeler. Numarasını
+        bilmediğiniz siparişleri bulmak ve mal kabulü bitenleri toplu görmek
+        içindir; ayrıntı için dönen `order_number` ile
+        `/query/purchase-order/{order_number}` çağrılır. Kalemler bu listede yoktur.
+
+        **Tarih süzgeci son harekete göredir:** PO'nun kendisi ya da ondan
+        doğan giriş siparişi, hangisi daha yeni güncellendiyse o zaman esas
+        alınır ve `updated_at` olarak döner. Böylece "son 1 günde mal kabulü
+        tamamlananlar" tek çağrıyla bulunur: `inbound_status=completed`.
+
+        `start_date` ve `end_date` BİRLİKTE verilir ya da hiç verilmez; aralık
+        30 günü aşamaz. Parametresiz çağrıda son 30 gün döner. Sonuçlar
+        `updated_at` azalan sırada, en çok 1000 kayıt. Varsayılan durum
+        süzgeci yoktur.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: start_date
+          in: query
+          required: false
+          description: Başlangıç. YYYY-MM-DD ya da RFC3339. end_date ile birlikte verilir.
+          schema: { type: string, format: date }
+          example: "2026-09-01"
+        - name: end_date
+          in: query
+          required: false
+          description: Bitiş. start_date ile birlikte verilir.
+          schema: { type: string, format: date }
+          example: "2026-09-30"
+        - name: status
+          in: query
+          required: false
+          description: PO durumuna süzer. Verilmezse tüm durumlar döner.
+          schema:
+            type: string
+            enum: [pending, converted, cancelled]
+        - name: inbound_status
+          in: query
+          required: false
+          description: |
+            Doğan giriş siparişinin durumuna süzer; `completed` ile yalnız
+            mal kabulü bitenler döner. Verilmezse süzülmez.
+          schema: { type: string }
+          example: completed
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    order_number: { type: string }
+                    status: { type: string, enum: [pending, converted, cancelled] }
+                    event_key: { type: string }
+                    warehouse_code: { type: string }
+                    supplier_code: { type: string, nullable: true }
+                    origin:
+                      type: string
+                      enum: [integration, wms]
+                      description: integration = entegrasyondan gelen, wms = WMS içinde açılmış.
+                    inbound_status:
+                      type: string
+                      nullable: true
+                      description: Doğan giriş siparişinin durumu; dönüşüm yoksa null.
+                    completed_at:
+                      type: string
+                      format: date-time
+                      nullable: true
+                      description: Mal kabulün kapandığı an; bitmediyse null.
+                    created_at: { type: string, format: date-time }
+                    updated_at:
+                      type: string
+                      format: date-time
+                      description: Son hareket — PO ya da doğan girişin güncellenme zamanı, hangisi yeniyse.
+              example:
+                - order_number: "PO-1006-TEST-002"
+                  status: "converted"
+                  event_key: "purchase_order_converted"
+                  warehouse_code: "1006"
+                  supplier_code: "N/A"
+                  origin: "integration"
+                  inbound_status: "completed"
+                  completed_at: "2026-09-10T13:02:36Z"
+                  created_at: "2026-09-10T12:39:10Z"
+                  updated_at: "2026-09-10T13:02:36Z"
+                - order_number: "PO-1006-TEST-001"
+                  status: "pending"
+                  event_key: "purchase_order_pending"
+                  warehouse_code: "1006"
+                  supplier_code: "N/A"
+                  origin: "integration"
+                  inbound_status: null
+                  completed_at: null
+                  created_at: "2026-09-10T12:39:09Z"
+                  updated_at: "2026-09-10T12:39:09Z"
+        "400":
+          description: |
+            Tarih kuralı ihlali (error_code: invalid_date ya da missing_field):
+            aralık 30 günü aşıyor, start_date > end_date, ya da ikisinden
+            yalnız biri verilmiş.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /query/stock/{warehouse_id}:
     get:
       tags: [Query]
