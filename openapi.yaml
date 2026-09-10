@@ -358,6 +358,9 @@ paths:
            kabulde girilen irsaliye no ve tarihi (`invoice_number`,
            `invoice_date`) ve kalem bazında GERÇEKLEŞEN miktar
            (`received_qty`), lot, üretim ve son kullanma tarihi
+        4. `data.received` — true/false: mal kabul bitti mi. Hiç null olmaz;
+           `inbound_order` null olsa da cevap verir. Satınalma irsaliyesini
+           kesme sinyali budur; `completed_at` yanında durur.
 
         Dönüşümden doğan giriş siparişi PO ile AYNI numarayı taşır: WMS'in
         dönüşüm ekranı sipariş no ve referans no alanlarını PO numarasıyla
@@ -415,6 +418,7 @@ paths:
                   items:
                     - sku_code: "99999-TEST"
                       quantity: 200
+                  received: true
                   inbound_order:
                     order_number: "PO-1006-TEST-001"
                     status: "completed"
@@ -451,6 +455,9 @@ paths:
         3. `data.outbound_order` — dönüşümden doğan çıkış siparişi: durumu,
            sevk anı (`shipped_at`, sevk edilmediyse null) ve kalem bazında
            TOPLANAN miktar (`picked_qty`), lot, üretim ve son kullanma tarihi
+        4. `data.shipped` — true/false: sevk edildi mi. Hiç null olmaz;
+           `outbound_order` null olsa da cevap verir. "Transfer tamamlandı"
+           sinyali budur; `shipped_at` yanında durur.
 
         **`data.items[].lot_resolved` alanına dikkat edin.** Transfer
         kalemlerinde lot zorunludur ama WMS lot kayıtlarında bulunamayan lot
@@ -510,6 +517,7 @@ paths:
                       quantity: 20
                       lot: "R2329047"
                       lot_resolved: true
+                  shipped: false
                   outbound_order: null
         "404":
           description: |
@@ -705,6 +713,9 @@ paths:
                       description: |
                         integration = sizin gönderdiğiniz, wms = WMS içinde
                         açılmış (sizde karşılığı yok).
+                    shipped:
+                      type: boolean
+                      description: Sevk edildi mi. Hiç null olmaz; "yalnız sevk edilenler" için bu alana bakın.
                     outbound_status:
                       type: string
                       nullable: true
@@ -726,6 +737,7 @@ paths:
                   target_warehouse_code: "12345"
                   ship_date: "2026-08-27"
                   origin: "integration"
+                  shipped: false
                   outbound_status: null
                   shipped_at: null
                   created_at: "2026-08-27T10:58:11Z"
@@ -736,6 +748,7 @@ paths:
                   target_warehouse_code: "12345"
                   ship_date: "2026-08-28"
                   origin: "wms"
+                  shipped: true
                   outbound_status: "completed"
                   shipped_at: "2026-08-27T14:05:00Z"
                   created_at: "2026-08-27T13:40:00Z"
@@ -819,6 +832,9 @@ paths:
                       type: string
                       enum: [integration, wms]
                       description: integration = entegrasyondan gelen, wms = WMS içinde açılmış.
+                    received:
+                      type: boolean
+                      description: Mal kabul bitti mi. Hiç null olmaz; "yalnız kabulü bitenler" için bu alana bakın.
                     inbound_status:
                       type: string
                       nullable: true
@@ -840,6 +856,7 @@ paths:
                   warehouse_code: "1006"
                   supplier_code: "N/A"
                   origin: "integration"
+                  received: true
                   inbound_status: "completed"
                   completed_at: "2026-09-10T13:02:36Z"
                   created_at: "2026-09-10T12:39:10Z"
@@ -850,6 +867,7 @@ paths:
                   warehouse_code: "1006"
                   supplier_code: "N/A"
                   origin: "integration"
+                  received: false
                   inbound_status: null
                   completed_at: null
                   created_at: "2026-09-10T12:39:09Z"
